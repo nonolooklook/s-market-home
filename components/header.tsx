@@ -1,9 +1,11 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Button } from './ui/button'
+import { ChainIcon, ConnectKitButton } from 'connectkit'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { ConnectKitButton } from 'connectkit'
+import { Address, useAccount, useNetwork } from 'wagmi'
+import { Button } from './ui/button'
 
 const links = [
   { href: '/', label: 'Market' },
@@ -11,20 +13,49 @@ const links = [
   { href: '/my', label: 'My Assets' },
 ]
 
+const admins: Address[] = ['0xFE18Aa1EFa652660F36Ab84F122CD36108f903B6']
+const isAdmin = (address?: Address) => {
+  if (!address) return false
+  return !!admins.find((add) => add == address)
+}
 export function Header() {
   const r = useRouter()
   const pathname = usePathname()
-  console.info('Header')
+  const { chain, chains } = useNetwork()
+  const chainName = chains.find((c) => c.id === chain?.id)?.name
+  const { address } = useAccount()
   return (
-    <header className={cn('flex fixed w-[calc(100%-5.5rem)] items-center justify-between mx-11 my-5 px-5 bg-white border border-gray-100 rounded-lg h-16')}>
+    <header
+      className={cn(
+        'flex sticky top-0 w-[calc(100%-5.5rem)] items-center justify-between mx-11 my-5 px-5 bg-white border border-gray-100 rounded-lg h-16 z-50',
+      )}
+    >
       <div className='flex items-center gap-8'>
+        <Image height={36} width={128} src='/logo.png' alt='logo' />
         {links.map((item) => (
-          <Button variant={pathname == item.href ? 'default' : 'ghost'} onClick={() => r.push(item.href)}>
+          <Button
+            key={item.href}
+            variant={
+              pathname == item.href || (pathname.startsWith(item.href) && item.href !== '/') ? 'default' : 'ghost'
+            }
+            onClick={() => r.push(item.href)}
+          >
             {item.label}
           </Button>
         ))}
+        {isAdmin(address) && (
+          <Button variant={pathname == '/admin' ? 'default' : 'ghost'} onClick={() => r.push('/admin')}>
+            Admin
+          </Button>
+        )}
       </div>
-      <div>
+      <div className='flex items-center gap-5'>
+        {chain && (
+          <div className='flex items-center gap-2'>
+            <ChainIcon id={chain.id} unsupported={chain.unsupported} />
+            <span>{chainName}</span>
+          </div>
+        )}
         <ConnectKitButton />
       </div>
     </header>

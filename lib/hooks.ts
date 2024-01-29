@@ -15,7 +15,7 @@ export const useApproves = (
   const clinet = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const [isSuccess, setSuccess] = useState(false);
-  const tokens = useMemo(() => Object.keys(needAllownce).filter((item) => item !== NATIVE_TOKEN_ADDRESS) as Address[], [needAllownce]);
+  const tokens = useMemo(() => Object.keys(needAllownce).filter((item) => item !== NativeToken) as Address[], [needAllownce]);
   const [allowance, setAllownce] = useState<{ [k: Address]: bigint }>(spender ? cacheAllowance[spender] || {} : {});
   const updateAllownce = (token: Address, value: bigint) => {
     if (!spender) return;
