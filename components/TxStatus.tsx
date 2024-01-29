@@ -40,11 +40,11 @@ function StepArrow({ active }: { active: boolean }) {
     <svg xmlns='http://www.w3.org/2000/svg' width='106' height='5' viewBox='0 0 106 5' fill={color}>
       <defs>
         <linearGradient id='grad1' x1='0%' y1='0%' x2='100%' y2='0%'>
-          <stop offset='0%' stopColor='#fff' stopOpacity={0.1} />
+          <stop offset='0%' stopColor='#ffab03be' stopOpacity={0.1} />
           <stop offset='100%' stopColor='#FFAC03' stopOpacity={1} />
         </linearGradient>
         <linearGradient id='grad2' x1='0%' y1='0%' x2='100%' y2='0%'>
-          <stop offset='0%' stopColor='#fff' stopOpacity={0.1} />
+          <stop offset='0%' stopColor='#5647289a' stopOpacity={0.1} />
           <stop offset='100%' stopColor='#564728' stopOpacity={1} />
         </linearGradient>
       </defs>
@@ -354,7 +354,7 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
         .then((data) => data.data as TxTaskStatus)
         .catch(() => null)
 
-      if (r2?.task_status === CATCH_RANDOM_RESPONSE) {
+      if (r2?.task_status === PREPARE_SEND_SUCCESS) {
         safeRef.current && setTypeStep({ type: 'step', step: { step: 1, min, max } })
       }
       if (
