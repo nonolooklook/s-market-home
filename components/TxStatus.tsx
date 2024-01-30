@@ -2,16 +2,15 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { BASE_URL, getCurrentExploerUrl } from '@/lib/config'
+import { useSafe } from '@/lib/hooks/useSafe'
+import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TxTaskStatus } from '@/lib/types'
 import { cn, displayBn, parseBn } from '@/lib/utils'
 import { Share2Icon } from '@radix-ui/react-icons'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
 import { Button } from './ui/button'
-import { useSafe } from '@/lib/hooks/useSafe'
-import { Address } from 'viem'
-import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TxTaskStatus } from '@/lib/types'
 
 function StepDot({ active }: { active: boolean }) {
   return (
@@ -186,7 +185,7 @@ function PriceItem({
     <div className='flex justify-between items-center w-full text-lg font-medium relative overflow-visible h-[2.5rem]'>
       <div className=''>{tit}</div>
       {value && <TypeValue />}
-      {!value && <div className='loader' style={{ fontSize: 5 }} />}
+      {!value && <div className='loading' style={{ fontSize: 5 }} />}
 
       {txHash && (
         <a
@@ -289,10 +288,10 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
                 <Button
                   variant='secondary'
                   onClick={() => {
-                    if (pathname == '/portfolio') {
+                    if (pathname == '/my') {
                       window.location.reload()
                     } else {
-                      r.push('/portfolio')
+                      r.push('/my')
                     }
                   }}
                 >
@@ -300,7 +299,7 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
                 </Button>
                 <Button
                   onClick={() => {
-                    if (pathname == '/trade') {
+                    if (pathname.startsWith('/trade')) {
                       window.location.reload()
                     } else {
                       r.push('/trade')

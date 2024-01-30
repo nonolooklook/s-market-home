@@ -9,6 +9,7 @@ import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
 import { Suspense, useMemo, useState } from 'react'
 import { Providers } from './providers'
+import { TxStatus } from '@/components/TxStatus'
 
 function Home() {
   const nftTabs = useMemo<string[]>(() => {

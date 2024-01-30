@@ -15,6 +15,7 @@ import { MinMax } from '../MinMax'
 import { TradePairPrice } from '../TradePairPrice'
 import { TxStatus, useTxStatus } from '../TxStatus'
 import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
+import { Button } from '../ui/button'
 
 export function SellForBid({
   open,
@@ -25,13 +26,13 @@ export function SellForBid({
   const { address } = useAccount()
   const [amount, setAmount] = useState('1')
   const maxAmount = order.remaining_item_size || 0
-  const [min, max] = getOrderMinMaxBigint(order)
-  const mid = getOrderEPbigint(order)
+  const [min, max] = getOrderMinMaxBigint(order.detail)
+  const mid = getOrderEPbigint(order.detail)
   useEffect(() => setAmount(maxAmount.toFixed()), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
   const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus(() => fillSellOrder())
   const { balance } = useAssetBalance(tp)
-  const canBuy = Number(amount) <= maxAmount && balance >= BigInt(amount)
+  const canSell = Number(amount) <= maxAmount && balance >= BigInt(amount)
   const create = useCreateOrder()
   const fillSellOrder = async () => {
     try {
@@ -105,7 +106,7 @@ export function SellForBid({
       })
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      intevalCheckStatus(res.data.hash, getOrderPerMinMax(order))
+      intevalCheckStatus(res.data.hash, getOrderPerMinMax(order.detail))
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)
@@ -115,7 +116,7 @@ export function SellForBid({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className='dialog-content w-[660px]' onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogTitle className='dialog-title'>Buy</DialogTitle>
+          <DialogTitle className='dialog-title'>Sell</DialogTitle>
           <TradePairPrice tp={tp} />
           <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='left' defaultValue={30} />
           <MinMax min={displayBn(min) as any} max={displayBn(max) as any} disableInput={true} />
@@ -126,9 +127,9 @@ export function SellForBid({
           />
           <AuthBalanceFee token={tp.token} auth={(parseBn(amount as `${number}`) * max) / 10n ** 18n} balance />
           <div className='flex justify-center mb-4 mt-6'>
-            <button className={'btn-primary w-[170px]'} onClick={fillSellOrder} disabled={!canBuy}>
-              {canBuy ? 'Buy' : 'Not enough'}
-            </button>
+            <Button onClick={fillSellOrder} disabled={!canSell}>
+              {canSell ? 'Sell' : 'Not enough'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

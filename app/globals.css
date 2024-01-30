@@ -80,8 +80,8 @@
 }
 
 
-/* HTML: <div class="loader"></div> */
-.loader {
+/* HTML: <div class="loading"></div> */
+.loading {
   width: 50px;
   aspect-ratio: 1;
   display: grid;
@@ -92,8 +92,8 @@
   background-repeat: no-repeat;
   animation: l23 1s infinite steps(12);
 }
-.loader::before,
-.loader::after {
+.loading::before,
+.loading::after {
    content: "";
    grid-area: 1/1;
    border-radius: 50%;
@@ -101,7 +101,7 @@
    opacity: 0.915;
    transform: rotate(30deg);
 }
-.loader::after {
+.loading::after {
    opacity: 0.83;
    transform: rotate(60deg);
 }
@@ -109,7 +109,7 @@
   100% {transform: rotate(1turn)}
 }
 
-/* HTML: <div class="loader"></div> */
+/* HTML: <div class="loader2"></div> */
 .loader2 {
   width: fit-content;
   font-size: 17px;
