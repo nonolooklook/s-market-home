@@ -51,7 +51,7 @@ export function useAssetBalance(tp: TradePair) {
         enabled: !!address,
       }
     }
-  }, [tp])
+  }, [tp, address])
   const res = useContractRead(config)
 
   return {

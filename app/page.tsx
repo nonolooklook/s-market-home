@@ -22,33 +22,33 @@ export function Home() {
 
   const nfts = useMemo(() => {
     return _.range(1, 11).map((num) => [
-      <div className='flex items-center gap-4'>
+      <div key={'star'} className='flex items-center gap-4'>
         <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
         {num}
       </div>,
-      <div className='flex items-center gap-2'>
+      <div key={'project'} className='flex items-center gap-2'>
         <img src='/nfts.png' className='w-10 h-10 rounded-full' />
         <div className='font-semibold'>Project X</div>
       </div>,
       '5,678.45',
       '5,678.45',
-      <DeltaPecent value={(0.5 - _.random(true)) * 3} />,
+      <DeltaPecent key={'pencent'} value={(0.5 - _.random(true)) * 3} />,
       '100000',
     ])
   }, [])
 
   const tokens = useMemo(() => {
     return _.range(1, 11).map((num) => [
-      <div className='flex items-center'>
+      <div key={'star'} className='flex items-center'>
         <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
       </div>,
-      <div className='flex items-center gap-2'>
+      <div key={'project'} className='flex items-center gap-2'>
         <img src='/tokens.png' className='w-10 h-10 rounded-full' />
         <div className='font-semibold'>BTC</div>
         <div className='text-gray-400'>Bitcoin</div>
       </div>,
       '5,678.45',
-      <DeltaPecent value={(0.5 - _.random(true)) * 3} />,
+      <DeltaPecent key={'percent'} value={(0.5 - _.random(true)) * 3} />,
       '5,678.45',
       '¥2348,121,123B',
     ])

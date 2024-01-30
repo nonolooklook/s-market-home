@@ -327,7 +327,7 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
     setOpen(open)
     safeRef.current = open
     !open && setTypeStep({ type: 'loading' })
-  }, [])
+  }, [safeRef])
 
   const txsProps: TxStatusProps = useMemo(() => {
     return {
@@ -336,7 +336,7 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
       onClose: () => setTxsOpen(false),
       onRetry,
     }
-  }, [open, typestep, setTxsOpen, onRetry])
+  }, [typestep, setTxsOpen, onRetry])
 
   const intevalCheckStatus = (reqId: string, [min, max]: [string, string]) => {
     setTypeStep({ type: 'step', step: { step: 0, min, max } })

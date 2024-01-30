@@ -345,7 +345,7 @@ export function useTradePairMeta(tp: TradePair) {
           })
         })
     }
-  }, [tp.asset, tp.token])
+  }, [tp, pc])
 
   return { meta: data }
 }

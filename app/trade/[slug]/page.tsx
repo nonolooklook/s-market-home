@@ -48,7 +48,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         })
         .value(),
     ],
-    [data],
+    [data, tp.asset, tp.token],
   )
   const { meta } = useTradePairMeta(tp)
 
