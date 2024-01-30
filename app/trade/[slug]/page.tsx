@@ -20,7 +20,7 @@ import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, isSelfMaker } from '@/
 import { OrderWrapper, TradePair } from '@/lib/types'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
-import { useMemo, useRef, useState } from 'react'
+import { Suspense, useMemo, useRef, useState } from 'react'
 
 function getPecentForOrder(o: OrderWrapper) {
   const max = 20

@@ -1,8 +1,22 @@
-import { privilegeOrderRange } from '@/config/privilege'
-import { calculateBetaDist, calculateBetaFunction, calculateBetaInv } from '@/utils/beta'
-import { displayBalance } from '@/utils/display'
+
+import { calculateBetaDist, calculateBetaFunction, calculateBetaInv } from '@/lib/beta'
+import { displayBn } from '@/lib/utils'
 import * as d3 from 'd3'
 import { Fragment, useLayoutEffect, useRef, useState } from 'react'
+
+export type OrderRange = {
+  min: number
+  max: number
+  a: number // alpha
+  b: number // beta
+}
+
+export const privilegeOrderRange: OrderRange[] = [
+  { min: 0, max: 20, a: 2, b: 3 },
+  { min: 90, max: 110, a: 3, b: 3 },
+  { min: 990, max: 1010, a: 3, b: 3 },
+]
+
 
 const defData = [
   { ...privilegeOrderRange[0], beta: 9989, flex: 15 },
@@ -212,7 +226,7 @@ export const BetaD3Chart3 = ({ data = defData }: { data?: { min: number; max: nu
           .attr('y2', height - bottom)
           .raise()
         tooltipText
-          .text(displayBalance(cx, 2))
+          .text(displayBn(cx, 2))
           .attr('x', realX)
           .attr('y', topY - 14)
         tooltipArrow.attr('opacity', 1).attr('points', `${realX},${topY - 4} ${realX + 6},${topY - 10} ${realX - 6},${topY - 10}`)
@@ -245,11 +259,11 @@ export const BetaD3Chart3 = ({ data = defData }: { data?: { min: number; max: nu
         {x > 0 && x <= 1 && (
           <div className={''}>
             {/* <div className='absolute text-xs bottom-20 left-2 flex flex-col items-center'>
-              Price &lt; {displayBalance(cx, 2)}
+              Price &lt; {displayBn(cx, 2)}
               <div className={'px-3 mt-1 py-1 text-xs rounded-full border border-white'}>{(x * 100).toFixed(4)}%</div>
             </div> */}
             <div className='absolute bottom-20 right-0 text-xs flex flex-col items-center'>
-              Price &gt; {displayBalance(cx, 2)}
+              Price &gt; {displayBn(cx, 2)}
               <div className={'px-3 mt-1 py-1 text-xs rounded-full border-white border'}>{((1 - x) * 100).toFixed(4)}%</div>
             </div>
           </div>

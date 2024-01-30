@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Address, useAccount, useNetwork } from 'wagmi'
 import { Button } from './ui/button'
 import { memoAccount } from '@/lib/order'
+import { Suspense } from 'react'
 
 const links = [
   { href: '/', label: 'Market' },
@@ -19,14 +20,14 @@ const isAdmin = (address?: Address) => {
   if (!address) return false
   return !!admins.find((add) => add == address)
 }
-export function Header() {
+function Header_() {
   const r = useRouter()
   const pathname = usePathname()
   const { chain, chains } = useNetwork()
   const chainName = chains.find((c) => c.id === chain?.id)?.name
   const { address } = useAccount()
   memoAccount.current = address as any
-  
+
   return (
     <header
       className={cn(
@@ -62,5 +63,13 @@ export function Header() {
         <ConnectKitButton />
       </div>
     </header>
+  )
+}
+
+export function Header() {
+  return (
+    <Suspense>
+      <Header_ />
+    </Suspense>
   )
 }

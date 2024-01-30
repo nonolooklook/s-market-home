@@ -48,16 +48,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <ApolloProvider client={client}>
-        <WagmiConfig config={config}>
-          <QueryParamProvider adapter={NextAdapterApp}>
-            <ConnectKitProvider>
-              <Header />
-              {mounted && children}
-            </ConnectKitProvider>
-          </QueryParamProvider>
-        </WagmiConfig>
-      </ApolloProvider>
+      <React.Suspense>
+        <ApolloProvider client={client}>
+          <WagmiConfig config={config}>
+            <QueryParamProvider adapter={NextAdapterApp}>
+              <ConnectKitProvider>
+                <Header />
+                {mounted && children}
+              </ConnectKitProvider>
+            </QueryParamProvider>
+          </WagmiConfig>
+        </ApolloProvider>
+      </React.Suspense>
       <Toaster position={'top-right'} />
     </>
   )

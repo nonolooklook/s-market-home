@@ -7,10 +7,10 @@ import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/c
 import { Input } from '@/components/ui/input'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { Providers } from './providers'
 
-export function Home() {
+function Home() {
   const nftTabs = useMemo<string[]>(() => {
     return ['🔥 Trending', '🌈 PFP', '🌟 Watchlist']
   }, [])

@@ -1,4 +1,4 @@
-import { BETADIST, BETAINV } from '@formulajs/formulajs'
+import * as FF from '@formulajs/formulajs'
 
 function strip(num: number, precision = 12) {
   return +parseFloat(num.toPrecision(precision))
@@ -7,13 +7,13 @@ function strip(num: number, precision = 12) {
 export const calculateBetaDist = (x: number, a: number, b: number) => {
   if (x <= 0) return 0
   if (x >= 1) return 1
-  return BETADIST(x, a, b, true, 0, 1)
+  return FF.BETADIST(x, a, b, true, 0, 1)
 }
 
 export const calculateBetaInv = (y: number, a: number, b: number) => {
   if (y <= 0) return 0
   if (y >= 1) return 1
-  return BETAINV(y, a, b, 0, 1)
+  return FF.BETAINV(y, a, b, 0, 1)
 }
 
 export const calculateBetaFunction = (alpha: number, beta: number) => {
