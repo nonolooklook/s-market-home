@@ -1,10 +1,11 @@
 import { useTpOrderDistribution } from '@/lib/hooks/useTpOrderDistribution'
-import { TradePair } from '@/lib/types'
-import _ from 'lodash'
+import { DistributionItem, TradePair } from '@/lib/types'
+import { CrossCircledIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 import { Button } from './ui/button'
-import { CrossCircledIcon } from '@radix-ui/react-icons'
 const precisions = [0.01, 0.1, 1, 10, 50, 100]
+
+const empty: DistributionItem[] = []
 export const PriceChart = ({
   tp,
   selectedPrice,
@@ -19,8 +20,8 @@ export const PriceChart = ({
   const [precision, setPrecision] = useState(0.1)
   const { data: tpDisData } = useTpOrderDistribution(tp, precision)
 
-  const lists = tpDisData?.listExpectationList || []
-  const bids = tpDisData?.bidExpectationList || []
+  const lists = tpDisData?.listExpectationList || empty
+  const bids = tpDisData?.bidExpectationList || empty
   const minPrice = tpDisData?.minPrice ?? 0
   const maxPrice = tpDisData?.maxPrice ?? 0
   const fix = precision >= 1 ? 0 : precision >= 0.1 ? 1 : precision >= 0.01 ? 2 : 3
@@ -34,7 +35,7 @@ export const PriceChart = ({
       listMap.set(item.price.toFixed(fix), item.expectation)
     })
     return { bidsMap, listMap }
-  }, [lists, bids])
+  }, [lists, bids, fix])
   const bidMaxY = useMemo(
     () => bids.reduce((max: number, cv: { expectation: number }) => (cv.expectation > max ? cv.expectation : max), 0),
     [bids],
@@ -59,7 +60,7 @@ export const PriceChart = ({
       })
     }
     return mdata
-  }, [minPrice, fix, maxValue, maxPrice, bidsMap, listMap])
+  }, [minPrice, fix, maxValue, maxPrice, bidsMap, listMap, precision])
 
   const step = maxValue / 5
   const values = useMemo(
@@ -93,7 +94,7 @@ export const PriceChart = ({
             {data?.map((d, i) => {
               const isSelected = selectedPrice != 0 && (selectedPrice || 0).toFixed(fix) === d.price
               return (
-                <div className='flex flex-col items-center gap-1 w-[3.3%] h-full'>
+                <div className='flex flex-col items-center gap-1 w-[3.3%] h-full' key={'data_' + i}>
                   <CrossCircledIcon
                     className={` ${isSelected ? 'visible cursor-pointer' : 'invisible'}`}
                     onClick={() => isSelected && setSelectedPrice && setSelectedPrice(0)}
@@ -105,7 +106,6 @@ export const PriceChart = ({
                     onClick={() => {
                       setSelectedPrice && setSelectedPrice(parseFloat(d.price))
                     }}
-                    key={'data_' + i}
                   >
                     <div className={`flex gap-1 flex-col-reverse cursor-pointer`}>
                       {d.bidAmount > 0 &&
