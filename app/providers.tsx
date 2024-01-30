@@ -40,21 +40,25 @@ const client = new ApolloClient({
 import { Header } from '@/components/header'
 import NextAdapterApp from 'next-query-params/app'
 import { QueryParamProvider } from 'use-query-params'
+import { Toaster } from 'sonner'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
 
   return (
-    <ApolloProvider client={client}>
-      <WagmiConfig config={config}>
-        <QueryParamProvider adapter={NextAdapterApp}>
-          <ConnectKitProvider>
-            <Header />
-            {mounted && children}
-          </ConnectKitProvider>
-        </QueryParamProvider>
-      </WagmiConfig>
-    </ApolloProvider>
+    <>
+      <ApolloProvider client={client}>
+        <WagmiConfig config={config}>
+          <QueryParamProvider adapter={NextAdapterApp}>
+            <ConnectKitProvider>
+              <Header />
+              {mounted && children}
+            </ConnectKitProvider>
+          </QueryParamProvider>
+        </WagmiConfig>
+      </ApolloProvider>
+      <Toaster position={'top-right'} />
+    </>
   )
 }

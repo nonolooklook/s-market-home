@@ -1,24 +1,33 @@
 import { useMemo, useState } from 'react'
-import { fillOrders, postOrder, useClients, useCreateOrder } from '../market'
+import { fillOrders, loopCheckFillOrders, postOrder, useClients, useCreateOrder } from '../market'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '../types'
-import { useAccount } from 'wagmi'
+import { Address, useAccount } from 'wagmi'
 import { handleError, sleep } from '../utils'
 import { useTokenBalance } from './useTokenBalance'
-import { isInteger } from 'lodash'
+import _, { isInteger } from 'lodash'
+import { isSelfMaker } from '../order'
+import { useRequestMatchOrder } from './useRequestMatchOrder'
 
 export function useDumpBuy(tp: TradePair, orders: OrderWrapper[], count: number) {
   const clients = useClients()
   const [loading, setLoading] = useState(false)
+
   const makerOrders: OrderWrapper[] = useMemo(() => {
     let needCount = count
-    return orders.filter((o) => {
-      const hasCount = Number(o.detail.parameters.offer[0].startAmount)
+    return orders.map<OrderWrapper>(_.cloneDeep).filter((o) => {
+      if (isSelfMaker(o.detail)) return false
+      const hasCount = Number(o.remaining_item_size)
+      const totalCount = Number(o.detail.parameters.offer[0].endAmount)
       if (needCount >= hasCount) {
         needCount = needCount - hasCount
+        if (hasCount != totalCount) {
+          o.detail.numerator = hasCount
+          o.detail.denominator = totalCount
+        }
         return true
       } else if (needCount > 0) {
         o.detail.numerator = needCount
-        o.detail.denominator = Number(o.detail.parameters.offer[0].endAmount)
+        o.detail.denominator = totalCount
         needCount = 0
         return true
       } else {
@@ -44,7 +53,7 @@ export function useDumpBuy(tp: TradePair, orders: OrderWrapper[], count: number)
   const disabledDumpBuy =
     !isInteger(count) || !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || needEnd > balance
   const create = useCreateOrder()
-
+  const reqMatchOrder = useRequestMatchOrder()
   const dumpBuy = async () => {
     if (disabledDumpBuy) return
     try {
@@ -92,7 +101,10 @@ export function useDumpBuy(tp: TradePair, orders: OrderWrapper[], count: number)
         takerOrders: [createOrder.order as any],
         modeOrderFulfillments: fullfillments,
       })
-      return res
+      const hashes = makerOrders.map<Address>((m) => m.order_hash).concat([createOrder.orderHash])
+      await reqMatchOrder(hashes)
+      await loopCheckFillOrders(res, 'Dump buy')
+      setLoading(false)
     } catch (error) {
       handleError(error)
       setLoading(false)

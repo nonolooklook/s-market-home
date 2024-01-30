@@ -119,3 +119,13 @@ export type TxTaskStatus = {
 
   price: string
 }
+
+export const CREATE = 0,
+  GAS_PAYED = 1,
+  PREPARE_SEND_FAILED = -1,
+  PREPARE_SEND_SUCCESS = 2,
+  CATCH_RANDOM_RESPONSE = 3,
+  SEND_MATCH_ORDER_SUCCESS = 4,
+  SEND_MATCH_ORDER_FAILED = -2,
+  INVALID_GAS = -3,
+  MATCH_SUCCESS = 5

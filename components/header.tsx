@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { Address, useAccount, useNetwork } from 'wagmi'
 import { Button } from './ui/button'
+import { memoAccount } from '@/lib/order'
 
 const links = [
   { href: '/', label: 'Market' },
@@ -24,6 +25,8 @@ export function Header() {
   const { chain, chains } = useNetwork()
   const chainName = chains.find((c) => c.id === chain?.id)?.name
   const { address } = useAccount()
+  memoAccount.current = address as any
+  
   return (
     <header
       className={cn(

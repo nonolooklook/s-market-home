@@ -1,25 +1,33 @@
-import { isInteger } from 'lodash'
+import _, { isInteger } from 'lodash'
 import { useMemo, useState } from 'react'
-import { useAccount } from 'wagmi'
+import { Address, useAccount } from 'wagmi'
 import { FEE_ADDRESS } from '../config'
-import { CreatedOrder, fillOrders, useClients, useCreateOrder } from '../market'
+import { CreatedOrder, fillOrders, loopCheckFillOrders, useClients, useCreateOrder } from '../market'
+import { isSelfMaker } from '../order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '../types'
 import { handleError, sleep } from '../utils'
 import { useAssetBalance } from './useTokenBalance'
+import { useRequestMatchOrder } from './useRequestMatchOrder'
 
 export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number) {
   const clients = useClients()
   const [loading, setLoading] = useState(false)
   const makerOrders: OrderWrapper[] = useMemo(() => {
     let needCount = count
-    return orders.filter((o) => {
-      const hasCount = Number(o.detail.parameters.consideration[0].startAmount)
+    return orders.map<OrderWrapper>(_.cloneDeep).filter((o) => {
+      if (isSelfMaker(o.detail)) return false
+      const hasCount = o.remaining_item_size
+      const totalCount = Number(o.detail.parameters.consideration[0].endAmount)
       if (needCount >= hasCount) {
         needCount = needCount - hasCount
+        if (totalCount !== hasCount) {
+          o.detail.numerator = hasCount
+          o.detail.denominator = totalCount
+        }
         return true
       } else if (needCount > 0) {
         o.detail.numerator = needCount
-        o.detail.denominator = Number(o.detail.parameters.consideration[0].endAmount)
+        o.detail.denominator = totalCount
         needCount = 0
         return true
       } else {
@@ -32,8 +40,9 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
   const disabledDumpSell =
     !isInteger(count) || !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || BigInt(count) > balance
   const create = useCreateOrder()
+  const reqMatchOrder = useRequestMatchOrder()
   const dumpSell = async () => {
-    if (disabledDumpSell) return
+    if (disabledDumpSell || loading) return
     try {
       setLoading(true)
       const fullfillments: MatchOrdersFulfillment[] = []
@@ -103,7 +112,12 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
         takerOrders: createdOrders.map((m) => m.order) as any,
         modeOrderFulfillments: fullfillments,
       })
-      return res
+      const hashes = makerOrders
+        .map<Address>((m) => m.order_hash)
+        .concat(createdOrders.map<Address>((m) => m.orderHash))
+      await reqMatchOrder(hashes)
+      await loopCheckFillOrders(res, 'Dump sell')
+      setLoading(false)
     } catch (error) {
       handleError(error)
       setLoading(false)

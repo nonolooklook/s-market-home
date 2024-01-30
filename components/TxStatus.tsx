@@ -11,7 +11,7 @@ import { useInterval } from 'usehooks-ts'
 import { Button } from './ui/button'
 import { useSafe } from '@/lib/hooks/useSafe'
 import { Address } from 'viem'
-import { TxTaskStatus } from '@/lib/types'
+import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TxTaskStatus } from '@/lib/types'
 
 function StepDot({ active }: { active: boolean }) {
   return (
@@ -317,15 +317,7 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
     </Dialog>
   )
 }
-const CREATE = 0,
-  GAS_PAYED = 1,
-  PREPARE_SEND_FAILED = -1,
-  PREPARE_SEND_SUCCESS = 2,
-  CATCH_RANDOM_RESPONSE = 3,
-  SEND_MATCH_ORDER_SUCCESS = 4,
-  SEND_MATCH_ORDER_FAILED = -2,
-  INVALID_GAS = -3,
-  MATCH_SUCCESS = 5
+
 
 export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
   const safeRef = useSafe()

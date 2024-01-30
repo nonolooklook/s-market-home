@@ -3,6 +3,7 @@
 import { CoinIcon } from '@/components/CoinIcon'
 import GridTable from '@/components/GridTable'
 import STable from '@/components/SimpleTable'
+import { Spinner } from '@/components/Spinner'
 import { BuyForList } from '@/components/modal/BuyForList'
 import { ListForSale } from '@/components/modal/ListForSell'
 import { PlaceBid } from '@/components/modal/PlaceBid'
@@ -15,7 +16,7 @@ import { useDumpSell } from '@/lib/hooks/useDumpSell'
 import { useOrderList } from '@/lib/hooks/useOrderList'
 import { useGetTradePair } from '@/lib/hooks/useTradePairs'
 import { useTradePairMeta } from '@/lib/nft'
-import { getOrderEP, getOrderEPbigint, getOrderPerMinMax } from '@/lib/order'
+import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, isSelfMaker } from '@/lib/order'
 import { OrderWrapper, TradePair } from '@/lib/types'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
@@ -57,8 +58,18 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const [openSell, setOpenSell] = useState<OrderWrapper>()
   const [buyCount, setBuyCount] = useState(0)
   const [sellCount, setSellCount] = useState(0)
-  const { dumpBuy, disabledDumpBuy, makerOrders: buyOrders } = useDumpBuy(tp, listdata, buyCount)
-  const { dumpSell, disabledDumpSell, makerOrders: sellOrders } = useDumpSell(tp, bidsdata, sellCount)
+  const {
+    dumpBuy,
+    disabledDumpBuy,
+    makerOrders: buyOrders,
+    loading: loadingDumpBuy,
+  } = useDumpBuy(tp, listdata, buyCount)
+  const {
+    dumpSell,
+    disabledDumpSell,
+    makerOrders: sellOrders,
+    loading: loadingDumpSell,
+  } = useDumpSell(tp, bidsdata, sellCount)
 
   const bids = useMemo(() => {
     return bidsdata.map((o) => {
@@ -100,11 +111,15 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const onDumpSell = async () => {
     try {
       await dumpSell()
+      setSellCount(0)
+      refetchOrderList()
     } catch (error) {}
   }
   const onDumpBuy = async () => {
     try {
       await dumpBuy()
+      setBuyCount(0)
+      refetchOrderList()
     } catch (error) {}
   }
   const hoverRef = useRef<{ datas: OrderWrapper[]; index: number }>({ datas: [], index: -1 })
@@ -130,10 +145,14 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
               header={['Amount', 'Max Price', 'Min Price', 'Deviation', 'Expected Price']}
-              span={{ }}
+              span={{}}
               data={bids}
-              onClickRow={(index) => setOpenSell(bidsdata[index])}
-              rowClassName='cursor-pointer my-2 hover:bg-orange-300/30 rounded-md relative'
+              onClickRow={(index) => !isSelfMaker(bidsdata[index].detail) && setOpenSell(bidsdata[index])}
+              rowClassName={(index) =>
+                `cursor-pointer my-2 hover:bg-orange-300/30 rounded-md overflow-hidden relative ${
+                  isSelfMaker(bidsdata[index].detail) ? 'text-blue-500' : ''
+                } `
+              }
               headerClassName='mx-5 w-[calc(100%-2.5rem)] text-center'
               tbodyClassName='max-h-[35rem] min-h-[35rem] overflow-y-auto block px-5'
               cellClassName='text-center'
@@ -152,7 +171,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
               onChange={(e) => setSellCount(_.toSafeInteger(e.target.value))}
             />
             <Button onClick={onDumpSell} disabled={disabledDumpSell}>
-              Dump Sell
+              {loadingDumpSell && <Spinner />} Dump Sell
             </Button>
           </div>
         </div>
@@ -162,8 +181,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
             <GridTable
               header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Amount']}
               data={listing}
-              onClickRow={(index) => setOpenBuy(listdata[index])}
-              rowClassName='cursor-pointer my-2 hover:bg-orange-300/30 rounded-md overflow-hidden relative'
+              onClickRow={(index) => !isSelfMaker(listdata[index].detail) && setOpenBuy(listdata[index])}
+              rowClassName={(index) =>
+                `cursor-pointer my-2 hover:bg-orange-300/30 rounded-md overflow-hidden relative ${
+                  isSelfMaker(listdata[index].detail) ? 'text-blue-500' : ''
+                } `
+              }
               headerClassName='mx-5 w-[calc(100%-2.5rem)] text-center'
               tbodyClassName='max-h-[35rem] min-h-[35rem] overflow-y-auto block px-5'
               cellClassName='text-center'
@@ -182,7 +205,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
               onChange={(e) => setBuyCount(_.toSafeInteger(e.target.value))}
             />
             <Button onClick={onDumpBuy} disabled={disabledDumpBuy}>
-              Dump Buy
+              {loadingDumpBuy && <Spinner />} Dump Buy
             </Button>
           </div>
         </div>

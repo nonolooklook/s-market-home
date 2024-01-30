@@ -3,9 +3,21 @@ import { Address, zeroAddress, hexToBigInt, toHex } from 'viem'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { MarketABI } from './abi/MarketAbi'
 import { approveOffer } from './nft'
-import { Clients, ConsiderationItem, ItemType, MatchOrdersFulfillment, OfferItem, Order, TradePair } from './types'
-import { parseBn, toJson } from './utils'
+import {
+  Clients,
+  ConsiderationItem,
+  ItemType,
+  MATCH_SUCCESS,
+  MatchOrdersFulfillment,
+  OfferItem,
+  Order,
+  PREPARE_SEND_SUCCESS,
+  TradePair,
+  TxTaskStatus,
+} from './types'
+import { parseBn, sleep, toJson } from './utils'
 import { BASE_URL, getCurrentMarketAddress } from './config'
+import { toast } from 'sonner'
 
 export function getOfferOrConsiderationItem<T extends ConsiderationItem | OfferItem>(
   itemType: ItemType,
@@ -221,6 +233,31 @@ export async function fillOrders(
       'Content-Type': 'application/json',
     },
     body: toJson(data),
-  }).then((r) => r.json())
+  })
+    .then((r) => r.json())
+    .then((data) => data as { data: { hash: string } })
+  if(!res?.data?.hash) throw 'Fill order error'  
   return res
+}
+
+export async function loopCheckFillOrders(res: UnPromise<ReturnType<typeof fillOrders>>, action: string) {
+  while (true) {
+    const r2 = await fetch(`${BASE_URL}/common/order/task/${res?.data?.hash}/detail`)
+      .then((r) => r.json())
+      .then((data) => data.data as TxTaskStatus)
+      .catch(() => null)
+    if (r2?.task_status === PREPARE_SEND_SUCCESS) {
+      toast.info('ChainLink random number requested')
+    }
+    if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {
+      // r2.order_probability_detail
+      toast.success(`${action} success`)
+      break
+    }
+    if ((r2?.task_status || 0) < 0) {
+      toast.error(`${action} error!`)
+      break
+    }
+    await sleep(5000)
+  }
 }
