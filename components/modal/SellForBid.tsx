@@ -4,7 +4,7 @@ import { useAssetBalance } from '@/lib/hooks/useTokenBalance'
 import { fillOrders, useCreateOrder } from '@/lib/market'
 import { getOrderEPbigint, getOrderMinMaxBigint, getOrderPerMinMax } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn, handleError, parseBn, sleep, toJson } from '@/lib/utils'
+import { displayBn, handleError, parseBn, sleep } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
@@ -103,14 +103,9 @@ export function SellForBid({
         makerOrders: [order.detail],
         modeOrderFulfillments: modeOrderFulfillments,
       })
-      console.log(res)
-      if (!res?.data?.status) {
-        setTypeStep({ type: 'fail' })
-        return
-      }
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      intevalCheckStatus(res.data.data.requestId, getOrderPerMinMax(order))
+      intevalCheckStatus(res.data.hash, getOrderPerMinMax(order))
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)

@@ -96,12 +96,6 @@ export function BuyForList({
         makerOrders: [order.detail],
         modeOrderFulfillments: modeOrderFulfillments,
       })
-
-      console.log(res)
-      if (!res?.data?.hash) {
-        setTypeStep({ type: 'fail' })
-        return
-      }
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
       intevalCheckStatus(res.data.hash, getOrderPerMinMax(order.detail))
