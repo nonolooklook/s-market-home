@@ -2,7 +2,7 @@
 
 import { CoinIcon } from '@/components/CoinIcon'
 import GridTable from '@/components/GridTable'
-import STable from '@/components/SimpleTable'
+import { PriceChart } from '@/components/PriceChart'
 import { Spinner } from '@/components/Spinner'
 import { BuyForList } from '@/components/modal/BuyForList'
 import { ListForSale } from '@/components/modal/ListForSell'
@@ -16,11 +16,12 @@ import { useDumpSell } from '@/lib/hooks/useDumpSell'
 import { useOrderList } from '@/lib/hooks/useOrderList'
 import { useGetTradePair } from '@/lib/hooks/useTradePairs'
 import { useTradePairMeta } from '@/lib/nft'
-import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, isSelfMaker } from '@/lib/order'
+import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
 import { OrderWrapper, TradePair } from '@/lib/types'
+import { parseBn } from '@/lib/utils'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
-import { Suspense, useMemo, useRef, useState } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 
 function getPecentForOrder(o: OrderWrapper) {
   const max = 20
@@ -29,10 +30,18 @@ function getPecentForOrder(o: OrderWrapper) {
 
 function TpTrade({ tp }: { tp: TradePair }) {
   const { data = [], refetch: refetchOrderList } = useOrderList(tp)
+  const [selectPrice, setSelectPrice] = useState<number>(0)
+
   const [bidsdata, listdata] = useMemo(
     () => [
       _.chain(data)
-        .filter((item) => item.detail.parameters.offer[0].token == tp.token)
+        .filter((item) => {
+          let [min, max] = [0n, 0n]
+          const priceBn = parseBn('' + selectPrice)
+          const isFilterForPrice =
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail)) && min < priceBn && max > priceBn)
+          return item.detail.parameters.offer[0].token == tp.token && isFilterForPrice
+        })
         .sort((a, b) => {
           const aep = getOrderEPbigint(a.detail)
           const bep = getOrderEPbigint(b.detail)
@@ -40,7 +49,13 @@ function TpTrade({ tp }: { tp: TradePair }) {
         })
         .value(),
       _.chain(data)
-        .filter((item) => item.detail.parameters.offer[0].token == tp.asset)
+        .filter((item) => {
+          let [min, max] = [0n, 0n]
+          const priceBn = parseBn('' + selectPrice)
+          const isFilterForPrice =
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail)) && min < priceBn && max > priceBn)
+          return item.detail.parameters.offer[0].token == tp.asset && isFilterForPrice
+        })
         .sort((a, b) => {
           const aep = getOrderEPbigint(a.detail)
           const bep = getOrderEPbigint(b.detail)
@@ -48,7 +63,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         })
         .value(),
     ],
-    [data, tp.asset, tp.token],
+    [data, tp.asset, tp.token, selectPrice],
   )
   const { meta } = useTradePairMeta(tp)
 
@@ -80,12 +95,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
         `$${min}`,
         _.random(1, 100) + '%',
         `$${getOrderEP(o.detail)}`,
-        <>
+        <Fragment key={'bid_info_' + o.id}>
           <div className='h-full absolute bg-green-400/50 rounded-md right-0' style={{ width: getPecentForOrder(o) }} />
           {sellOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-green-400' />
           )}
-        </>,
+        </Fragment>,
       ]
     })
   }, [bidsdata, sellOrders])
@@ -98,12 +113,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
         `$${min}`,
         `$${max}`,
         o.remaining_item_size,
-        <>
+        <Fragment key={'list_info_' + o.id}>
           <div className='h-full absolute left-0 bg-red-400/50 rounded-md' style={{ width: getPecentForOrder(o) }} />
           {buyOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-red-400' />
           )}
-        </>,
+        </Fragment>,
       ]
     })
   }, [listdata, buyOrders])
@@ -144,8 +159,8 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='mb-5 font-medium text-xl'>Bids</div>
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
+              keyS={'bid'}
               header={['Amount', 'Max Price', 'Min Price', 'Deviation', 'Expected Price']}
-              span={{}}
               data={bids}
               onClickRow={(index) => !isSelfMaker(bidsdata[index].detail) && setOpenSell(bidsdata[index])}
               rowClassName={(index) =>
@@ -179,6 +194,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='mb-5 font-medium text-xl'>Listing</div>
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
+              keyS={'list'}
               header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Amount']}
               data={listing}
               onClickRow={(index) => !isSelfMaker(listdata[index].detail) && setOpenBuy(listdata[index])}
@@ -209,6 +225,9 @@ function TpTrade({ tp }: { tp: TradePair }) {
             </Button>
           </div>
         </div>
+      </div>
+      <div className='py-4 mb-6'>
+        <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} />
       </div>
       {openList && <ListForSale open={true} onOpenChange={() => (refetchOrderList(), setOpenList(false))} tp={tp} />}
       {openPlaceBid && (

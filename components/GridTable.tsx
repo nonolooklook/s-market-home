@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import React, { CSSProperties, ReactNode } from 'react'
 
 export interface TableProps {
+  keyS: string
   header: ReactNode[]
   data: ReactNode[][]
   span?: number[] | { [k: number]: number }
@@ -27,6 +28,7 @@ export function DefEmpty() {
 }
 
 export const GridTable = ({
+  keyS,
   header,
   data,
   span = {},
@@ -41,6 +43,7 @@ export const GridTable = ({
   onClickRow,
   onRowMouseHover,
 }: TableProps) => {
+  console.log('gridKey:', keyS)
   const gridTemplateColumns = header
     .map((_item, i) => {
       const itemSpan = span[i] != undefined ? span[i] : 1
@@ -57,7 +60,7 @@ export const GridTable = ({
         )}
       >
         {header.map((head, i) => (
-          <div key={i} className={cn('p-3 font-normal text-sm', headerItemClassName)}>
+          <div key={keyS + '_header_' + i} className={cn('p-3 font-normal text-sm', headerItemClassName)}>
             {head}
           </div>
         ))}
@@ -65,7 +68,7 @@ export const GridTable = ({
       <div className={cn(tbodyClassName)}>
         {data.map((items, index) => (
           <div
-            key={index}
+            key={keyS + '_item_' + index}
             onClick={() => onClickRow && onClickRow(index)}
             onMouseEnter={() => onRowMouseHover && onRowMouseHover(index)}
             onMouseLeave={() => onRowMouseHover && onRowMouseHover(-1)}
@@ -82,7 +85,7 @@ export const GridTable = ({
               if (i >= header.length) return <>{value}</>
               return (
                 <div
-                  key={i}
+                  key={keyS + '_cell_' + i}
                   className={cn(
                     'px-3 py-2 text-base',
                     typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,

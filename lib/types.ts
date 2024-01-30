@@ -129,3 +129,15 @@ export const CREATE = 0,
   SEND_MATCH_ORDER_FAILED = -2,
   INVALID_GAS = -3,
   MATCH_SUCCESS = 5
+
+export type DistributionItem = {
+  price: number
+  expectation: number
+}
+export type TpOrderDistribution = {
+  maxPrice: number
+  minPrice: number
+  precision: number
+  bidExpectationList?: DistributionItem[]
+  listExpectationList?: DistributionItem[]
+}
