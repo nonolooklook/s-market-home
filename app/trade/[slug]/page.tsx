@@ -1,6 +1,4 @@
 'use client'
-
-import { CoinIcon } from '@/components/CoinIcon'
 import GridTable from '@/components/GridTable'
 import { PriceChart } from '@/components/PriceChart'
 import { Spinner } from '@/components/Spinner'
@@ -19,9 +17,13 @@ import { useTradePairMeta } from '@/lib/nft'
 import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
 import { OrderWrapper, TradePair } from '@/lib/types'
 import { parseBn } from '@/lib/utils'
+import { DiscordIcon } from '@/public/Discord'
+import { TwitterIcon } from '@/public/Twitter'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
-import { Fragment, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { Fragment, use, useEffect, useMemo, useRef, useState } from 'react'
+import { useNetwork } from 'wagmi'
 
 function getPecentForOrder(o: OrderWrapper) {
   const max = 20
@@ -31,7 +33,8 @@ function getPecentForOrder(o: OrderWrapper) {
 function TpTrade({ tp }: { tp: TradePair }) {
   const { data = [], refetch: refetchOrderList } = useOrderList(tp)
   const [selectPrice, setSelectPrice] = useState<number>(0)
-
+  const net = useNetwork()
+  const url = net.chain?.blockExplorers?.default?.url || 'https://sepolia.arbiscan.io/'
   const [bidsdata, listdata] = useMemo(
     () => [
       _.chain(data)
@@ -71,8 +74,11 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const [openPlaceBid, setOpenPlaceBid] = useState(false)
   const [openBuy, setOpenBuy] = useState<OrderWrapper>()
   const [openSell, setOpenSell] = useState<OrderWrapper>()
+  const [openHoverBuy, setOpenHoverBuy] = useState<OrderWrapper>()
   const [buyCount, setBuyCount] = useState(0)
   const [sellCount, setSellCount] = useState(0)
+  const [info, setInfo] = useState<Data>()
+  let hoverTimer: string | number | NodeJS.Timeout | undefined
   const {
     dumpBuy,
     disabledDumpBuy,
@@ -107,11 +113,13 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const listing = useMemo(() => {
     return listdata.map((o) => {
       const [min, max] = getOrderPerMinMax(o.detail)
+
       return [
         `$${getOrderEP(o.detail)}`,
         _.random(1, 100) + '%',
         `$${min}`,
         `$${max}`,
+        ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100 + '%',
         o.remaining_item_size,
         <Fragment key={'list_info_' + o.id}>
           <div className='h-full absolute left-0 bg-red-400/50 rounded-md' style={{ width: getPecentForOrder(o) }} />
@@ -122,6 +130,21 @@ function TpTrade({ tp }: { tp: TradePair }) {
       ]
     })
   }, [listdata, buyOrders])
+
+  useEffect(() => {
+    const getInfo = async () => {
+      fetch('https://sme-demo.mcglobal.ai/smev2/common/order/tradingPair/1/collection/detail')
+        .then((res) => res.json())
+        .then(({ data = {} }) => {
+          if (data) {
+            setInfo(data)
+          }
+        })
+        .catch((err) => console.log('fetch error:',err)
+        )
+    }
+    getInfo()
+  }, [])
 
   const onDumpSell = async () => {
     try {
@@ -139,6 +162,52 @@ function TpTrade({ tp }: { tp: TradePair }) {
   }
   const hoverRef = useRef<{ datas: OrderWrapper[]; index: number }>({ datas: [], index: -1 })
 
+  const dealTrailingZeros = (value?: string): string => {
+    if (!value) return ''
+    return value?.replace(/0+$/, '')
+  }
+
+  const totalVolume48: number = Number(dealTrailingZeros(info?.volume48))
+  const totalVolume24: number = Number(dealTrailingZeros(info?.volume24))
+
+  const volumeChange24: number = totalVolume24 - totalVolume48
+
+  const volumeChangePercentage24: number | string = (volumeChange24 / totalVolume48) * 100
+
+  const dealPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(price)
+  }
+
+  const PriceData = [
+    { title: 'Floor Price', price: `${dealPrice(Number(info?.floorPrice))}` },
+    { title: 'Top Bid', price: `${dealPrice(Number(info?.topBid))}` },
+    { title: '24H Change', price: totalVolume24 === 0 ? '-' : volumeChangePercentage24.toFixed(2) + '%' },
+    { title: '24H Volume', price: `${dealPrice(Number(info?.volume24))}` },
+    { title: 'Supply', price: `$${info?.collectionDetail.base_info?.total_supply}` },
+  ]
+
+  const onClickOrHover = (type: boolean, i: number) => {
+    if (!type) {
+      setOpenHoverBuy(undefined)
+      !isSelfMaker(listdata[i].detail) && setOpenBuy(listdata[i])
+    } else {
+      setOpenBuy(undefined)
+      !isSelfMaker(listdata[i].detail) && setOpenHoverBuy(listdata[i])
+    }
+  }
+
+  const copyTextToClipboard = () => {
+    navigator.clipboard
+      .writeText(info?.collectionDetail.contract_address as string)
+
+      .catch((error) => {
+        console.error('Unable to copy text to clipboard:', error)
+      })
+  }
+
   return (
     <main>
       <div className='flex items-center justify-between text-2xl font-medium'>
@@ -149,10 +218,46 @@ function TpTrade({ tp }: { tp: TradePair }) {
             <StarFilledIcon width={20} height={20} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
           </div>
         </div>
-        <div className='flex items-center gap-4'>
-          <CoinIcon coin='USDC' />
-          {'998,992,092'}
+        {PriceData.map((item, index) => {
+          return (
+            <div key={`price_${index}`}>
+              <div className='text-base font-normal'>{item.title}</div>
+              <div className='text-xl font-medium mt-[27px] text-center'>{item.price}</div>
+            </div>
+          )
+        })}
+        <div className=' h-[87px] bg-[#FBF7F7] flex items-center px-2'>
+          <img className='w-20 h-20 rounded-full' src={info?.collectionDetail.base_info.image_url} alt='nft-image' />
+          <div className=' ml-5'>
+            <div className='flex items-center'>
+              <span className=' mr-2'>{info?.collectionDetail.base_info.name}</span>
+              <img src='/start.svg' />
+            </div>
+            <div className='flex items-center gap-2 mt-2'>
+              <button onClick={copyTextToClipboard}>
+                <img src='/copy.svg' />
+              </button>
+              <Link target={'_blank'} href={`https://twitter.com/${info?.collectionDetail.base_info.twitter_username}`}>
+                <TwitterIcon />
+              </Link>
+              <Link target={'_blank'} href={`${info?.collectionDetail.base_info.discord_url}`}>
+                <DiscordIcon />
+              </Link>
+              <Link target={'_blank'} href={`${info?.collectionDetail.base_info.project_url}`}>
+                <img src='/earth.svg' />
+              </Link>
+            </div>
+          </div>
         </div>
+      </div>
+      <div className='flex justify-end gap-[10px] '>
+        <button
+          onClick={() => window.open(url + 'address/' + info?.collectionDetail.contract_address)}
+          className='flex justify-center items-center gap-2  rounded-[8px] border bg-[#1A1A1A] text-white w-[142px] h-10 text-lg font-light'
+        >
+          <img src='/history.svg'></img>
+          History
+        </button>
       </div>
       <div className='grid md:grid-cols-2 gap-5'>
         <div className=''>
@@ -162,6 +267,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
               keyS={'bid'}
               header={['Amount', 'Max Price', 'Min Price', 'Deviation', 'Expected Price']}
               data={bids}
+              list={bidsdata}
               onClickRow={(index) => !isSelfMaker(bidsdata[index].detail) && setOpenSell(bidsdata[index])}
               rowClassName={(index) =>
                 `cursor-pointer my-2 hover:bg-orange-300/30 rounded-md overflow-hidden relative ${
@@ -195,9 +301,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
               keyS={'list'}
-              header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Amount']}
+              header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Deviation', 'Amount']}
               data={listing}
-              onClickRow={(index) => !isSelfMaker(listdata[index].detail) && setOpenBuy(listdata[index])}
+              list={listdata}
+              onClickRow={(index) => {
+                onClickOrHover(false, index)
+              }}
               rowClassName={(index) =>
                 `cursor-pointer my-2 hover:bg-orange-300/30 rounded-md overflow-hidden relative ${
                   isSelfMaker(listdata[index].detail) ? 'text-blue-500' : ''

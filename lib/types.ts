@@ -141,3 +141,120 @@ export type TpOrderDistribution = {
   bidExpectationList?: DistributionItem[]
   listExpectationList?: DistributionItem[]
 }
+
+interface Fee {
+  fee: number
+  required: boolean
+  recipient: string
+}
+
+interface Rarity {
+  max_rank: number
+  strategy_id: string
+  calculated_at: string
+  tokens_scored: number
+  strategy_version: string
+}
+
+interface Contract {
+  chain: string
+  address: string
+}
+
+interface PaymentToken {
+  name: string
+  chain: string
+  image: string
+  symbol: string
+  address: string
+  decimals: number
+  eth_price: string
+  usd_price: string
+}
+
+interface CollectionDetail {
+  id: number
+  name: string
+  icon_url: string | null
+  contract_address: string
+  collection_slug: string
+  contract_type: number
+  status: number
+  index_base_info: number
+  index_trading_info: number
+  base_info: {
+    fees: Fee[]
+    name: string
+    owner: string
+    rarity: Rarity
+    editors: string[]
+    is_nsfw: boolean
+    category: string
+    wiki_url: string
+    contracts: Contract[]
+    image_url: string
+    collection: string
+    description: string
+    discord_url: string
+    is_disabled: boolean
+    opensea_url: string
+    project_url: string
+    created_date: string
+    telegram_url: string
+    total_supply: number
+    payment_tokens: PaymentToken[]
+    safelist_status: string
+    banner_image_url: string
+    twitter_username: string
+    instagram_username: string
+    trait_offers_enabled: boolean
+    collection_offers_enabled: boolean
+  }
+  trading_info: {
+    owners: number
+    sales24: number
+    volume24: number
+    floorPrice: number
+    totalSupply: number
+    volumeChange24: string
+  }
+  sort: number
+  last_index_base_time: string
+  last_index_trading_time: string
+  create_time: string
+  update_time: string
+}
+
+interface TokenDetail {
+  id: number
+  name: string
+  icon_url: string | null
+  contract_address: string
+  fsyms: string
+  status: number
+  index_base_info: number
+  index_trading_info: number
+  base_info: {
+    imageUrl: string
+  }
+  trading_info: {
+    price: number
+    change24: string
+    volume24: number
+    marketCap: number
+  }
+  sort: number
+  last_index_base_time: string
+  last_index_trading_time: string
+  create_time: string
+  update_time: string
+}
+
+interface Data {
+  floorPrice: string
+  collectionDetail: CollectionDetail
+  tokenDetail: TokenDetail
+  volume24: string
+  volume48: string
+  topBid: string
+}

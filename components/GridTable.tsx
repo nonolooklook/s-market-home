@@ -1,10 +1,13 @@
 import { cn } from '@/lib/utils'
-import React, { CSSProperties, ReactNode } from 'react'
+import React, { CSSProperties, ReactNode, useState } from 'react'
+import { RowTip } from './RowTooltip'
+import HoverModalList from './modal/HoverModalList'
 
 export interface TableProps {
   keyS: string
   header: ReactNode[]
   data: ReactNode[][]
+  list?: any[]
   span?: number[] | { [k: number]: number }
   empty?: ReactNode
   className?: string
@@ -41,15 +44,16 @@ export const GridTable = ({
   rowStyle,
   cellClassName,
   onClickRow,
+  list = [],
   onRowMouseHover,
 }: TableProps) => {
-  console.log('gridKey:', keyS)
   const gridTemplateColumns = header
     .map((_item, i) => {
       const itemSpan = span[i] != undefined ? span[i] : 1
       return `${itemSpan}fr`
     })
     .join(' ')
+
   return (
     <div className={className}>
       <div
@@ -69,9 +73,17 @@ export const GridTable = ({
         {data.map((items, index) => (
           <div
             key={keyS + '_item_' + index}
-            onClick={() => onClickRow && onClickRow(index)}
-            onMouseEnter={() => onRowMouseHover && onRowMouseHover(index)}
-            onMouseLeave={() => onRowMouseHover && onRowMouseHover(-1)}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              onClickRow && onClickRow(index)
+            }}
+            onMouseEnter={() => {
+              onRowMouseHover && onRowMouseHover(index)
+            }}
+            onMouseLeave={() => {
+              onRowMouseHover && onRowMouseHover(-1)
+            }}
             style={{
               gridTemplateColumns,
               ...(typeof rowStyle == 'function' ? rowStyle(index) : rowStyle),
@@ -84,14 +96,33 @@ export const GridTable = ({
             {items.map((value, i) => {
               if (i >= header.length) return <>{value}</>
               return (
-                <div
-                  key={keyS + '_cell_' + i}
-                  className={cn(
-                    'px-3 py-2 text-base',
-                    typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
+                <div key={`list_${i}`}>
+                  {list && list.length ? (
+                    <RowTip
+                      content={<HoverModalList order={list[index]} />}
+                      chilren={
+                        <div
+                          key={keyS + '_cell_' + i}
+                          className={cn(
+                            'px-3 py-2 text-base',
+                            typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
+                          )}
+                        >
+                          {value}
+                        </div>
+                      }
+                    />
+                  ) : (
+                    <div
+                      key={keyS + '_cell_' + i}
+                      className={cn(
+                        'px-3 py-2 text-base',
+                        typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
+                      )}
+                    >
+                      {value}
+                    </div>
                   )}
-                >
-                  {value}
                 </div>
               )
             })}
