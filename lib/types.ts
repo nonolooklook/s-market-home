@@ -250,7 +250,7 @@ interface TokenDetail {
   update_time: string
 }
 
-interface Data {
+export interface Data {
   floorPrice: string
   collectionDetail: CollectionDetail
   tokenDetail: TokenDetail

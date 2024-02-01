@@ -15,14 +15,14 @@ import { useOrderList } from '@/lib/hooks/useOrderList'
 import { useGetTradePair } from '@/lib/hooks/useTradePairs'
 import { useTradePairMeta } from '@/lib/nft'
 import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
-import { OrderWrapper, TradePair } from '@/lib/types'
+import { Data, OrderWrapper, TradePair } from '@/lib/types'
 import { parseBn } from '@/lib/utils'
 import { DiscordIcon } from '@/public/Discord'
 import { TwitterIcon } from '@/public/Twitter'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
 import Link from 'next/link'
-import { Fragment, use, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useNetwork } from 'wagmi'
 
 function getPecentForOrder(o: OrderWrapper) {
@@ -69,16 +69,13 @@ function TpTrade({ tp }: { tp: TradePair }) {
     [data, tp.asset, tp.token, selectPrice],
   )
   const { meta } = useTradePairMeta(tp)
-
   const [openList, setOpenList] = useState(false)
   const [openPlaceBid, setOpenPlaceBid] = useState(false)
   const [openBuy, setOpenBuy] = useState<OrderWrapper>()
   const [openSell, setOpenSell] = useState<OrderWrapper>()
-  const [openHoverBuy, setOpenHoverBuy] = useState<OrderWrapper>()
   const [buyCount, setBuyCount] = useState(0)
   const [sellCount, setSellCount] = useState(0)
   const [info, setInfo] = useState<Data>()
-  let hoverTimer: string | number | NodeJS.Timeout | undefined
   const {
     dumpBuy,
     disabledDumpBuy,
@@ -140,8 +137,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
             setInfo(data)
           }
         })
-        .catch((err) => console.log('fetch error:',err)
-        )
+        .catch((err) => console.log('fetch error:', err))
     }
     getInfo()
   }, [])
@@ -160,7 +156,6 @@ function TpTrade({ tp }: { tp: TradePair }) {
       refetchOrderList()
     } catch (error) {}
   }
-  const hoverRef = useRef<{ datas: OrderWrapper[]; index: number }>({ datas: [], index: -1 })
 
   const dealTrailingZeros = (value?: string): string => {
     if (!value) return ''
@@ -191,11 +186,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
 
   const onClickOrHover = (type: boolean, i: number) => {
     if (!type) {
-      setOpenHoverBuy(undefined)
       !isSelfMaker(listdata[i].detail) && setOpenBuy(listdata[i])
-    } else {
-      setOpenBuy(undefined)
-      !isSelfMaker(listdata[i].detail) && setOpenHoverBuy(listdata[i])
     }
   }
 
