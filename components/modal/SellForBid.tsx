@@ -2,7 +2,7 @@ import { FEE_ADDRESS } from '@/lib/config'
 import { useRequestMatchOrder } from '@/lib/hooks/useRequestMatchOrder'
 import { useAssetBalance } from '@/lib/hooks/useTokenBalance'
 import { fillOrders, useCreateOrder } from '@/lib/market'
-import { getOrderEPbigint, getOrderMinMaxBigint, getOrderPerMinMax } from '@/lib/order'
+import { getOrderEPbigint, getOrderMinMaxBigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
 import { displayBn, handleError, parseBn, sleep } from '@/lib/utils'
 import { useEffect, useState } from 'react'
@@ -26,7 +26,7 @@ export function SellForBid({
   const { address } = useAccount()
   const [amount, setAmount] = useState('1')
   const maxAmount = order.remaining_item_size || 0
-  const [min, max] = getOrderMinMaxBigint(order.detail)
+  const [min, max] = getOrderPerMinMaxBigint(order.detail)
   const mid = getOrderEPbigint(order.detail)
   useEffect(() => setAmount(maxAmount.toFixed()), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
@@ -118,7 +118,7 @@ export function SellForBid({
         <DialogContent className='dialog-content w-[660px]' onPointerDownOutside={(e) => e.preventDefault()}>
           <DialogTitle className='dialog-title'>Sell</DialogTitle>
           <TradePairPrice tp={tp} />
-          <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='left' defaultValue={30} />
+          <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='right' defaultValue={70} />
           <MinMax min={displayBn(min) as any} max={displayBn(max) as any} disableInput={true} />
           <InputQuantityValue
             amount={amount}

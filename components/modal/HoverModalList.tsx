@@ -18,7 +18,13 @@ const HoverModalList: FC<HoverModalListProps> = ({ onOpenChange, order }) => {
 
   return (
     <Fragment>
-      <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='left' defaultValue={30} />
+      <BetaD3Chart
+        minPrice={min}
+        expectedPrice={mid}
+        maxPrice={max}
+        showType={order.order_type == 2 ? 'left' : 'right'}
+        defaultValue={order.order_type == 2 ? 30 : 70}
+      />
       <MinMax min={displayBn(min) as any} max={displayBn(max) as any} disableInput={true} />
     </Fragment>
   )
