@@ -23,9 +23,8 @@ import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
 import Link from 'next/link'
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { useNetwork } from 'wagmi'
-import 'react-toastify/dist/ReactToastify.css'
 
 function getPecentForOrder(o: OrderWrapper) {
   const max = 20
@@ -342,7 +341,6 @@ function TpTrade({ tp }: { tp: TradePair }) {
       )}
       {openBuy && <BuyForList open={true} onOpenChange={() => setOpenBuy(undefined)} tp={tp} order={openBuy} />}
       {openSell && <SellForBid open={true} onOpenChange={() => setOpenSell(undefined)} tp={tp} order={openSell} />}
-      <ToastContainer autoClose={1000} />
     </main>
   )
 }
