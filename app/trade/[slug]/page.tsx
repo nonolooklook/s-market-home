@@ -16,14 +16,16 @@ import { useGetTradePair } from '@/lib/hooks/useTradePairs'
 import { useTradePairMeta } from '@/lib/nft'
 import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
 import { Data, OrderWrapper, TradePair } from '@/lib/types'
-import { parseBn } from '@/lib/utils'
+import { dealUrl, parseBn } from '@/lib/utils'
 import { DiscordIcon } from '@/public/Discord'
 import { TwitterIcon } from '@/public/Twitter'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
 import Link from 'next/link'
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
 import { useNetwork } from 'wagmi'
+import 'react-toastify/dist/ReactToastify.css'
 
 function getPecentForOrder(o: OrderWrapper) {
   const max = 20
@@ -92,11 +94,13 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const bids = useMemo(() => {
     return bidsdata.map((o) => {
       const [min, max] = getOrderPerMinMax(o.detail)
+      let num = ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100
+      let Deviation = parseInt(num.toFixed(0)) + '%'
       return [
         o.remaining_item_size,
         `$${max}`,
         `$${min}`,
-        _.random(1, 100) + '%',
+        Deviation,
         `$${getOrderEP(o.detail)}`,
         <Fragment key={'bid_info_' + o.id}>
           <div className='h-full absolute bg-green-400/50 rounded-md right-0' style={{ width: getPecentForOrder(o) }} />
@@ -110,13 +114,14 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const listing = useMemo(() => {
     return listdata.map((o) => {
       const [min, max] = getOrderPerMinMax(o.detail)
+      let num = ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100
+      let Deviation = parseInt(num.toFixed(0)) + '%'
 
       return [
         `$${getOrderEP(o.detail)}`,
-        _.random(1, 100) + '%',
         `$${min}`,
         `$${max}`,
-        ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100 + '%',
+        Deviation,
         o.remaining_item_size,
         <Fragment key={'list_info_' + o.id}>
           <div className='h-full absolute left-0 bg-red-400/50 rounded-md' style={{ width: getPecentForOrder(o) }} />
@@ -193,7 +198,9 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const copyTextToClipboard = () => {
     navigator.clipboard
       .writeText(info?.collectionDetail.contract_address as string)
-
+      .then(() => {
+        toast.success('Copy successfully!')
+      })
       .catch((error) => {
         console.error('Unable to copy text to clipboard:', error)
       })
@@ -241,12 +248,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
           </div>
         </div>
       </div>
+
       <div className='flex justify-end gap-[10px] '>
         <button
-          onClick={() => window.open(url + 'address/' + info?.collectionDetail.contract_address)}
+          onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail.contract_address)}
           className='flex justify-center items-center gap-2  rounded-[8px] border bg-[#1A1A1A] text-white w-[142px] h-10 text-lg font-light'
         >
-          <img src='/history.svg'></img>
           History
         </button>
       </div>
@@ -292,7 +299,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
               keyS={'list'}
-              header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Deviation', 'Amount']}
+              header={['Expected Price', 'Min Price', 'Max Price', 'Deviation', 'Amount']}
               data={listing}
               list={listdata}
               onClickRow={(index) => {
@@ -335,6 +342,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
       )}
       {openBuy && <BuyForList open={true} onOpenChange={() => setOpenBuy(undefined)} tp={tp} order={openBuy} />}
       {openSell && <SellForBid open={true} onOpenChange={() => setOpenSell(undefined)} tp={tp} order={openSell} />}
+      <ToastContainer autoClose={1000} />
     </main>
   )
 }
