@@ -118,9 +118,9 @@ function TpTrade({ tp }: { tp: TradePair }) {
 
       return [
         `$${getOrderEP(o.detail)}`,
+        Deviation,
         `$${min}`,
         `$${max}`,
-        Deviation,
         o.remaining_item_size,
         <Fragment key={'list_info_' + o.id}>
           <div className='h-full absolute left-0 bg-red-400/50 rounded-md' style={{ width: getPecentForOrder(o) }} />
@@ -185,7 +185,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
     { title: 'Top Bid', price: `${dealPrice(Number(info?.topBid))}` },
     { title: '24H Change', price: totalVolume24 === 0 ? '-' : volumeChangePercentage24.toFixed(2) + '%' },
     { title: '24H Volume', price: `${dealPrice(Number(info?.volume24))}` },
-    { title: 'Supply', price: `$${info?.collectionDetail.base_info?.total_supply}` },
+    { title: 'Supply', price: `${info?.collectionDetail.base_info?.total_supply}` },
   ]
 
   const onClickOrHover = (type: boolean, i: number) => {
@@ -298,7 +298,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           <div className='border border-gray-200 rounded-2xl'>
             <GridTable
               keyS={'list'}
-              header={['Expected Price', 'Min Price', 'Max Price', 'Deviation', 'Amount']}
+              header={['Expected Price', 'Deviation', 'Min Price', 'Max Price', 'Amount']}
               data={listing}
               list={listdata}
               onClickRow={(index) => {
