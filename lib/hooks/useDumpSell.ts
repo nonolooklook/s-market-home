@@ -1,34 +1,39 @@
-import _, { isInteger } from 'lodash'
-import { useMemo, useState } from 'react'
+import { useTxStatus } from '@/components/TxStatus'
+import _ from 'lodash'
+import { useMemo, useRef, useState } from 'react'
 import { Address, useAccount } from 'wagmi'
 import { FEE_ADDRESS } from '../config'
-import { CreatedOrder, fillOrders, loopCheckFillOrders, useClients, useCreateOrder } from '../market'
-import { isSelfMaker } from '../order'
+import { CreatedOrder, fillOrders, useClients, useCreateOrder } from '../market'
+import { getOrderPerMinMax, isSelfMaker } from '../order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '../types'
-import { handleError, sleep } from '../utils'
-import { useAssetBalance } from './useTokenBalance'
+import { handleError, parseBn, sleep } from '../utils'
 import { useRequestMatchOrder } from './useRequestMatchOrder'
+import { useAssetBalance } from './useTokenBalance'
 
-export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number) {
+export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number, onSuccess?: () => void) {
   const clients = useClients()
   const [loading, setLoading] = useState(false)
+  const isErc20 = tp.assetType === 'ERC20'
+  const assetDecimals = isErc20 ? 18 : 0
+  const countBn = parseBn(count.toString(), assetDecimals)
   const makerOrders: OrderWrapper[] = useMemo(() => {
-    let needCount = count
+    if (count <= 0) return []
+    let needCount = countBn
     return orders.map<OrderWrapper>(_.cloneDeep).filter((o) => {
       if (isSelfMaker(o.detail)) return false
-      const hasCount = o.remaining_item_size
-      const totalCount = Number(o.detail.parameters.consideration[0].endAmount)
+      const hasCount = parseBn(o.remaining_item_size, assetDecimals)
+      const totalCount = BigInt(o.detail.parameters.consideration[0].endAmount)
       if (needCount >= hasCount) {
         needCount = needCount - hasCount
         if (totalCount !== hasCount) {
-          o.detail.numerator = hasCount
-          o.detail.denominator = totalCount
+          o.detail.numerator = hasCount.toString()
+          o.detail.denominator = totalCount.toString()
         }
         return true
       } else if (needCount > 0) {
-        o.detail.numerator = needCount
-        o.detail.denominator = totalCount
-        needCount = 0
+        o.detail.numerator = needCount.toString()
+        o.detail.denominator = totalCount.toString()
+        needCount = 0n
         return true
       } else {
         return false
@@ -37,35 +42,33 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
   }, [orders, count])
   const { address } = useAccount()
   const { balance } = useAssetBalance(tp)
-  const disabledDumpSell =
-    !isInteger(count) || !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || BigInt(count) > balance
+  const disabledDumpSell = !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || countBn > balance
   const create = useCreateOrder()
   const reqMatchOrder = useRequestMatchOrder()
+  const refRetry = useRef<() => any>()
+  const txs = useTxStatus(() => refRetry.current && refRetry.current())
   const dumpSell = async () => {
     if (disabledDumpSell || loading) return
     try {
       setLoading(true)
+      txs.setTypeStep({ type: 'loading' })
+      txs.setTxsOpen(true)
       const fullfillments: MatchOrdersFulfillment[] = []
       const createdOrders: CreatedOrder[] = []
       const mLength = makerOrders.length
       for (let i = 0; i < mLength; ++i) {
         const makerO = makerOrders[i]
-        const startAmount =
-          (BigInt(makerO.detail.parameters.offer[0].startAmount) * BigInt(makerO.detail.numerator)) /
-          BigInt(makerO.detail.denominator)
-        const endAmount =
-          (BigInt(makerO.detail.parameters.offer[0].endAmount) * BigInt(makerO.detail.numerator)) /
-          BigInt(makerO.detail.denominator)
-        const countForMaker = (
-          (Number(makerO.detail.parameters.consideration[0].startAmount) * makerO.detail.numerator) /
-          makerO.detail.denominator
-        ).toFixed()
+        const numerator = BigInt(makerO.detail.numerator)
+        const denominator = BigInt(makerO.detail.denominator)
+        const startAmount = (BigInt(makerO.detail.parameters.offer[0].startAmount) * numerator) / denominator
+        const endAmount = (BigInt(makerO.detail.parameters.offer[0].endAmount) * numerator) / denominator
+        const countForMaker = (BigInt(makerO.detail.parameters.consideration[0].startAmount) * numerator) / denominator
         const createdOrder = await create(
           [
             {
               itemType: assetTypeToItemType(tp.assetType),
-              startAmount: countForMaker,
-              endAmount: countForMaker,
+              startAmount: countForMaker.toString(),
+              endAmount: countForMaker.toString(),
               token: tp.asset,
               identifierOrCriteria: makerO.detail.parameters.consideration[0].identifierOrCriteria,
             },
@@ -116,12 +119,15 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
         .map<Address>((m) => m.order_hash)
         .concat(createdOrders.map<Address>((m) => m.orderHash))
       await reqMatchOrder(hashes)
-      await loopCheckFillOrders(res, 'Dump sell')
+      const success = await txs.intevalCheckStatus(res.hash, getOrderPerMinMax(makerOrders[0].detail, tp))
+      success && onSuccess && onSuccess()
       setLoading(false)
     } catch (error) {
-      handleError(error)
       setLoading(false)
+      txs.setTypeStep({ type: 'fail' })
+      handleError(error)
     }
   }
-  return { loading, makerOrders, dumpSell, disabledDumpSell, balanceLow: BigInt(count) > balance }
+  refRetry.current = dumpSell
+  return { loading, makerOrders, dumpSell, disabledDumpSell, balanceLow: countBn > balance, txs }
 }

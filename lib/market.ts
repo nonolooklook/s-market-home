@@ -18,6 +18,7 @@ import {
 import { parseBn, sleep, toJson } from './utils'
 import { BASE_URL, getCurrentMarketAddress } from './config'
 import { toast } from 'sonner'
+import { apiGet, apiPost } from './api'
 
 export function getOfferOrConsiderationItem<T extends ConsiderationItem | OfferItem>(
   itemType: ItemType,
@@ -207,15 +208,9 @@ export type CreatedOrder = UnPromise<ReturnType<typeof createOrder>>
 
 export async function postOrder(tp: TradePair, order: CreatedOrder) {
   if (!order) throw 'Order is empty'
-  await fetch(`${BASE_URL}/common/order/tradingPair/${tp.id}/create`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: toJson({
-      hash: order.orderHash,
-      entry: order.order,
-    }),
+  await apiPost(`/common/order/tradingPair/${tp.id}/create`, {
+    hash: order.orderHash,
+    entry: order.order,
   })
 }
 
@@ -227,26 +222,15 @@ export async function fillOrders(
     modeOrderFulfillments: MatchOrdersFulfillment[]
   },
 ) {
-  const res = await fetch(`${BASE_URL}/common/order/tradingPair/${tp.id}/fillOrder`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: toJson(data),
-  })
-    .then((r) => r.json())
-    .then((data) => data as { data: { hash: string } })
-  if(!res?.data?.hash) throw 'Fill order error'  
+  const res = await apiPost<{ hash: string }>(`/common/order/tradingPair/${tp.id}/fillOrder`, data)
+  if (!res?.hash) throw 'Fill order error'
   return res
 }
 
 export async function loopCheckFillOrders(res: UnPromise<ReturnType<typeof fillOrders>>, action: string) {
   while (true) {
-    const r2 = await fetch(`${BASE_URL}/common/order/task/${res?.data?.hash}/detail`)
-      .then((r) => r.json())
-      .then((data) => data.data as TxTaskStatus)
-      .catch(() => null)
-    if (r2?.task_status === PREPARE_SEND_SUCCESS) {
+    const r2 = await apiGet<TxTaskStatus>(`/common/order/task/${res.hash}/detail`).catch(() => null)
+    if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
       toast.info('ChainLink random number requested')
     }
     if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {

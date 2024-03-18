@@ -2,20 +2,19 @@ import { FEE_ADDRESS } from '@/lib/config'
 import { useRequestMatchOrder } from '@/lib/hooks/useRequestMatchOrder'
 import { useAssetBalance } from '@/lib/hooks/useTokenBalance'
 import { fillOrders, useCreateOrder } from '@/lib/market'
-import { getOrderEPbigint, getOrderMinMaxBigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
+import { getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn, handleError, parseBn, sleep } from '@/lib/utils'
+import { displayBn, fmtBn, handleError, parseBn, sleep } from '@/lib/utils'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
+import AssetInput from '../AssetInput'
 import { AuthBalanceFee } from '../AuthBalanceFee'
 import { BetaD3Chart } from '../BetaD3Chart'
-import { InputQuantityValue } from '../InputQuantity'
 import { MinMax } from '../MinMax'
 import { TradePairPrice } from '../TradePairPrice'
 import { TxStatus, useTxStatus } from '../TxStatus'
-import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
+import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
 
 export function SellForBid({
   open,
@@ -24,39 +23,37 @@ export function SellForBid({
   order,
 }: DialogBaseProps & { tp: TradePair; order: OrderWrapper }) {
   const { address } = useAccount()
+  const isErc20 = tp.assetType === 'ERC20'
+  const asseetDecimals = isErc20 ? 18 : 0
   const [amount, setAmount] = useState('1')
-  const maxAmount = order.remaining_item_size || 0
-  const [min, max] = getOrderPerMinMaxBigint(order.detail)
-  const mid = getOrderEPbigint(order.detail)
-  useEffect(() => setAmount(maxAmount.toFixed()), [maxAmount])
+  const amountBn = parseBn(amount, asseetDecimals)
+  const maxAmountBn = parseBn(order.remaining_item_size, asseetDecimals)
+  const maxAmount = fmtBn(maxAmountBn, asseetDecimals)
+  const [min, max] = getOrderPerMinMaxBigint(order.detail, tp)
+  const mid = getOrderEPbigint(order.detail, tp)
+  useEffect(() => setAmount(maxAmount), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
   const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus(() => fillSellOrder())
   const { balance } = useAssetBalance(tp)
-  const canSell = Number(amount) <= maxAmount && balance >= BigInt(amount)
+  const canSell = amountBn > 0n && amountBn <= maxAmountBn && balance >= amountBn
   const create = useCreateOrder()
   const fillSellOrder = async () => {
     try {
-      if (Number(amount) <= 0) {
-        toast.error("Amount can't be less than or equal to 0")
-        return
-      }
       if (!address) return
       setTypeStep({ type: 'loading' })
       setTxsOpen(true)
       const offer = order.detail.parameters.offer
       const identifer = order.detail.parameters.consideration[0].identifierOrCriteria
       const count = BigInt(order.detail.parameters.consideration[0].startAmount)
-      const startAmount =
-        (offer.reduce((amount: bigint, cv) => BigInt(cv.startAmount) + amount, 0n) * BigInt(amount)) / count
-      const endAmount =
-        (offer.reduce((amount: bigint, cv) => BigInt(cv.endAmount) + amount, 0n) * BigInt(amount)) / count
+      const startAmount = (offer.reduce((amount: bigint, cv) => BigInt(cv.startAmount) + amount, 0n) * amountBn) / count
+      const endAmount = (offer.reduce((amount: bigint, cv) => BigInt(cv.endAmount) + amount, 0n) * amountBn) / count
 
       const createdOrder = await create(
         [
           {
             itemType: assetTypeToItemType(tp.assetType),
-            startAmount: amount,
-            endAmount: amount,
+            startAmount: amountBn.toString(),
+            endAmount: amountBn.toString(),
             token: tp.asset,
             identifierOrCriteria: identifer,
           },
@@ -82,8 +79,8 @@ export function SellForBid({
         0,
       )
       // partail count
-      createdOrder.order.numerator = Number(amount)
-      createdOrder.order.denominator = Number(count)
+      order.detail.numerator = amountBn == count ? '1' : amountBn.toString()
+      order.detail.denominator = amountBn == count ? '1' : count.toString()
       const modeOrderFulfillments: MatchOrdersFulfillment[] = [
         {
           offerComponents: [{ orderIndex: 0, itemIndex: 0 }],
@@ -106,7 +103,7 @@ export function SellForBid({
       })
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      intevalCheckStatus(res.data.hash, getOrderPerMinMax(order.detail))
+      await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)
@@ -120,15 +117,11 @@ export function SellForBid({
           <TradePairPrice tp={tp} />
           <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='right' defaultValue={70} />
           <MinMax min={displayBn(min) as any} max={displayBn(max) as any} disableInput={true} />
-          <InputQuantityValue
-            amount={amount}
-            setAmount={setAmount}
-            value={`${displayBn((parseBn(amount as `${number}`) * max) / 10n ** 18n)} ${tp.tokenSymbol}`}
-          />
-          <AuthBalanceFee token={tp.token} auth={(parseBn(amount as `${number}`) * max) / 10n ** 18n} balance />
+          <AssetInput isErc20={isErc20} amount={amount} setAmount={setAmount} max={maxAmountBn} />
+          <AuthBalanceFee fee />
           <div className='flex justify-center mb-4 mt-6'>
             <Button onClick={fillSellOrder} disabled={!canSell}>
-              {canSell ? 'Sell' : 'Not enough'}
+              Sell
             </Button>
           </div>
         </DialogContent>

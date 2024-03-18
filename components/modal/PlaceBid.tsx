@@ -1,19 +1,19 @@
 import { BetaD3Chart } from '@/components/BetaD3Chart'
-import { InputWithButton } from '@/components/InputWithButton'
 import { Spinner } from '@/components/Spinner'
 import { useTokenBalance } from '@/lib/hooks/useTokenBalance'
 import { postOrder, useCreateOrder } from '@/lib/market'
 import { ItemType, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn as displayBalance, parseBn } from '@/lib/utils'
+import { displayBn, parseBn } from '@/lib/utils'
+import _ from 'lodash'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
+import AssetInput from '../AssetInput'
 import { AuthBalanceFee } from '../AuthBalanceFee'
 import { MinMax } from '../MinMax'
 import { TradePairPrice } from '../TradePairPrice'
 import { Button } from '../ui/button'
 import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
-import _ from 'lodash'
 
 export const PlaceBid = ({
   open,
@@ -22,9 +22,12 @@ export const PlaceBid = ({
 }: DialogBaseProps & {
   tp: TradePair
 }) => {
+  const isErc20 = tp.assetType === 'ERC20'
+  const asseetDecimals = isErc20 ? 18 : 0
   const [[min, max], setMinMax] = useState<[`${number}`, `${number}`]>(['8', '10'])
   const [loading, setLoading] = useState(false)
   const [amount, setAmount] = useState('1')
+  const amountBn = parseBn(amount, asseetDecimals)
   const account = useAccount()
   const balance = useTokenBalance({ address: account?.address, token: tp.token })
   const enableBid = balance >= parseBn(max as `${number}`) * parseBn(amount as `${number}`, 0)
@@ -34,6 +37,9 @@ export const PlaceBid = ({
     // create()
     if (!account || !account.address) return
     setLoading(true)
+    const asseetDecimals = isErc20 ? 18 : 0
+    const tokenStart = (parseBn(min as `${number}`) * amountBn) / 10n ** BigInt(asseetDecimals)
+    const tokenEnd = (parseBn(max as `${number}`) * amountBn) / 10n ** BigInt(asseetDecimals)
     try {
       const order = await create(
         [
@@ -41,21 +47,21 @@ export const PlaceBid = ({
             itemType: ItemType.ERC20.valueOf(),
             token: tp.token,
             identifierOrCriteria: '0',
-            startAmount: (parseBn(min as `${number}`) * parseBn(amount as `${number}`, 0)).toString(),
-            endAmount: (parseBn(max as `${number}`) * parseBn(amount as `${number}`, 0)).toString(),
+            startAmount: tokenStart.toString(),
+            endAmount: tokenEnd.toString(),
           },
         ],
         [
           {
-            itemType: assetTypeToItemType(tp.assetType),
+            itemType: assetTypeToItemType(tp.assetType, true),
             token: tp.asset,
             identifierOrCriteria: tp.assetId?.toString() || '0',
-            startAmount: parseBn(amount as `${number}`, 0).toString(),
-            endAmount: parseBn(amount as `${number}`, 0).toString(),
+            startAmount: amountBn.toString(),
+            endAmount: amountBn.toString(),
             recipient: account.address,
           },
         ],
-        _.toNumber(amount) > 1 ? 1 : 0, // Full Open
+        isErc20 || _.toNumber(amount) > 1 ? 1 : 0, // Full Open
       )
       await postOrder(tp, order)
       onOpenChange && onOpenChange(false)
@@ -80,11 +86,12 @@ export const PlaceBid = ({
         />
         <MinMax min={min} max={max} onChange={(min, max) => setMinMax([min, max])} />
         <AuthBalanceFee fee />
-        <div className='flex text-2xl font-light bg-white bg-opacity-5 rounded-2xl h-[64px] justify-between flex items-center px-6'>
-          <div>Quantity</div>
-          <InputWithButton amount={amount} setAmount={setAmount} />
-          <div>{displayBalance((parseBn(max as `${number}`) * parseBn(amount as `${number}`)) / 10n ** 18n)} USDC</div>
-        </div>
+        <AssetInput
+          isErc20={isErc20}
+          amount={amount}
+          setAmount={setAmount}
+          info={`${displayBn(parseBn(max) * amountBn, 2, 18 + asseetDecimals)} ${tp.tokenSymbol}`}
+        />
         <div className='flex justify-center my-4'>
           <Button disabled={loading || !enableBid} onClick={createOrder}>
             {loading && <Spinner />}

@@ -2,19 +2,18 @@ import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import { BetaD3Chart } from '../BetaD3Chart'
 import { displayBn, parseBn } from '@/lib/utils'
 import { FC, Fragment } from 'react'
-import { OrderWrapper } from '@/lib/types'
+import { OrderWrapper, TradePair } from '@/lib/types'
 import { getOrderEPbigint, getOrderPerMinMaxBigint } from '@/lib/order'
 import { MinMax } from '../MinMax'
 
 type HoverModalListProps = {
-  open?: boolean
-  onOpenChange?(open: boolean): void
   order: OrderWrapper
+  tp: TradePair
 }
 
-const HoverModalList: FC<HoverModalListProps> = ({ onOpenChange, order }) => {
-  const [min, max] = getOrderPerMinMaxBigint(order.detail)
-  const mid = getOrderEPbigint(order.detail)
+const HoverModalList: FC<HoverModalListProps> = ({ order, tp }) => {
+  const [min, max] = getOrderPerMinMaxBigint(order.detail, tp)
+  const mid = getOrderEPbigint(order.detail, tp)
 
   return (
     <Fragment>

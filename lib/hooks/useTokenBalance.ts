@@ -25,35 +25,13 @@ export function useTokenBalance({ address, token }: { address?: Address; token: 
 
 export function useAssetBalance(tp: TradePair) {
   const { address } = useAccount()
-  const config: UseContractReadConfig<any, any, any> = useMemo(() => {
-    if (tp.assetType == 'ERC20') {
-      return {
-        abi: erc20ABI,
-        address: tp.asset,
-        funcitonName: 'balanceOf',
-        args: [address],
-        enabled: !!address,
-      }
-    } else if (tp.assetType == 'ERC721') {
-      return {
-        abi: erc721ABI,
-        address: tp.asset,
-        functionName: 'balanceOf',
-        args: [address],
-        enabled: !!address,
-      }
-    } else {
-      return {
-        abi: erc1155ABI,
-        address: tp.asset,
-        functionName: 'balanceOf',
-        args: [address, tp.assetId],
-        enabled: !!address,
-      }
-    }
-  }, [tp, address])
-  const res = useContractRead(config)
-
+  const res = useContractRead({
+    abi: tp.assetType == 'ERC1155' ? erc1155ABI : erc20ABI,
+    address: tp.asset,
+    functionName: 'balanceOf',
+    args: tp.assetType == 'ERC1155' ? [address, tp.assetId] : [address],
+    enabled: !!address,
+  } as any)
   return {
     balance: getBigint(res, 'data'),
   }

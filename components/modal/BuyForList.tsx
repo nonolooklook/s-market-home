@@ -3,7 +3,7 @@ import { useTokenBalance } from '@/lib/hooks/useTokenBalance'
 import { fillOrders, useCreateOrder } from '@/lib/market'
 import { getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn, handleError, parseBn, sleep, toJson } from '@/lib/utils'
+import { displayBn, fmtBn, handleError, parseBn, sleep, toJson } from '@/lib/utils'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
@@ -22,24 +22,27 @@ export function BuyForList({
   tp,
   order,
 }: DialogBaseProps & { tp: TradePair; order: OrderWrapper }) {
+  const isErc20 = tp.assetType === 'ERC20'
+  const asseetDecimals = isErc20 ? 18 : 0
   const { address } = useAccount()
   const [amount, setAmount] = useState('1')
-  const maxAmount = order.remaining_item_size || 0
-  const [min, max] = getOrderPerMinMaxBigint(order.detail)
-  const mid = getOrderEPbigint(order.detail)
-  useEffect(() => setAmount(maxAmount.toFixed()), [maxAmount])
+  const amountBn = parseBn(amount, asseetDecimals)
+  const maxAmountBn = parseBn(order.remaining_item_size, asseetDecimals)
+  const maxAmount = fmtBn(maxAmountBn, asseetDecimals)
+
+  const [min, max] = getOrderPerMinMaxBigint(order.detail, tp)
+  const mid = getOrderEPbigint(order.detail, tp)
+  useEffect(() => setAmount(maxAmount), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
   const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus(() => fillSellOrder())
   const collateralBalance = useTokenBalance({ address, token: tp.token })
   const canBuy =
-    collateralBalance >= (parseBn(amount) * parseBn(order.max_price)) / 10n ** 18n && Number(amount) <= maxAmount
+    amountBn > 0n &&
+    collateralBalance >= (parseBn(amount) * parseBn(order.max_price)) / 10n ** 18n &&
+    amountBn <= maxAmountBn
   const create = useCreateOrder()
   const fillSellOrder = async () => {
     try {
-      if (Number(amount) <= 0) {
-        toast.error("Amount can't be less than or equal to 0")
-        return
-      }
       if (!address) return
       setTypeStep({ type: 'loading' })
       setTxsOpen(true)
@@ -48,8 +51,8 @@ export function BuyForList({
       const count = BigInt(order.detail.parameters.offer[0].startAmount)
       const startAmount = csd.reduce((amount: bigint, cv) => BigInt(cv.startAmount) + amount, 0n)
       const endAmount = csd.reduce((amount: bigint, cv) => BigInt(cv.endAmount) + amount, 0n)
-      const startOfferAmount = (startAmount * BigInt(amount)) / count
-      const endOfferAmount = (endAmount * BigInt(amount)) / count
+      const startOfferAmount = (startAmount * amountBn) / count
+      const endOfferAmount = (endAmount * amountBn) / count
       // console.info('amount:', startAmount, endAmount, startOfferAmount, endOfferAmount)
       const createdOrder = await create(
         [
@@ -64,8 +67,8 @@ export function BuyForList({
         [
           {
             itemType: assetTypeToItemType(tp.assetType),
-            startAmount: amount,
-            endAmount: amount,
+            startAmount: amountBn.toString(),
+            endAmount: amountBn.toString(),
             token: tp.asset,
             identifierOrCriteria: identifer,
             recipient: address,
@@ -74,8 +77,8 @@ export function BuyForList({
         0,
       )
       // partail count
-      order.detail.numerator = Number(amount)
-      order.detail.denominator = Number(count)
+      order.detail.numerator = amountBn == count ? '1' : amountBn.toString()
+      order.detail.denominator = amountBn == count ? '1' : count.toString()
       const modeOrderFulfillments: MatchOrdersFulfillment[] = [
         {
           offerComponents: [{ orderIndex: 0, itemIndex: 0 }],
@@ -98,7 +101,7 @@ export function BuyForList({
       })
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      intevalCheckStatus(res.data.hash, getOrderPerMinMax(order.detail))
+      await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)
@@ -113,6 +116,7 @@ export function BuyForList({
           <BetaD3Chart minPrice={min} expectedPrice={mid} maxPrice={max} showType='left' defaultValue={30} />
           <MinMax min={displayBn(min) as any} max={displayBn(max) as any} disableInput={true} />
           <InputQuantityValue
+            isErc20={isErc20}
             amount={amount}
             setAmount={setAmount}
             value={`${displayBn((parseBn(amount as `${number}`) * max) / 10n ** 18n)} ${tp.tokenSymbol}`}
@@ -120,7 +124,7 @@ export function BuyForList({
           <AuthBalanceFee token={tp.token} auth={(parseBn(amount as `${number}`) * max) / 10n ** 18n} balance />
           <div className='flex justify-center my-2'>
             <Button onClick={fillSellOrder} disabled={!canBuy}>
-              {canBuy ? 'Buy' : 'Not enough'}
+              Buy
             </Button>
           </div>
         </DialogContent>

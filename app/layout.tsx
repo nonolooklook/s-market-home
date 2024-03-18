@@ -3,6 +3,8 @@ import { Montserrat } from 'next/font/google'
 import './globals.css'
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font' })
 // const inter = Inter({ subsets: ["latin"] });
+import dynamic from 'next/dynamic'
+const Providers = dynamic(() => import('./providers'), { ssr: false })
 
 export const metadata: Metadata = {
   title: 'S-Market',
@@ -16,7 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' className='w-full h-full'>
-      <body className={montserrat.className}>{children}</body>
+      <body className={montserrat.className}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }

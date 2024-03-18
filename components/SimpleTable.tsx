@@ -75,6 +75,7 @@ export const STable = ({
             style={typeof rowStyle == 'function' ? rowStyle(index) : rowStyle}
             className={cn(
               'text-black table table-fixed w-full font-medium whitespace-nowrap',
+              onClickRow ? 'cursor-pointer hover:bg-slate-400/10' : '',
               typeof rowClassName == 'function' ? rowClassName(index) : rowClassName,
             )}
           >

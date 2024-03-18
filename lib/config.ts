@@ -4,6 +4,8 @@ import { sepolia, arbitrumSepolia } from 'viem/chains'
 // export const BASE_URL = 'http://192.168.1.18:3000/smev2'
 export const BASE_URL = 'https://sme-demo.mcglobal.ai/smev2'
 
+export const DECIMAL18 = 10n ** 18n
+
 export type AddressConfig = {
   [k: number]: Address
 }

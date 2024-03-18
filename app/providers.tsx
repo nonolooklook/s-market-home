@@ -37,29 +37,28 @@ const client = new ApolloClient({
   cache: new InMemoryCache(),
 })
 // ----------------------- use query -----------------------------
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Header } from '@/components/header'
 import NextAdapterApp from 'next-query-params/app'
 import { QueryParamProvider } from 'use-query-params'
 import { Toaster } from 'sonner'
+const queryClient = new QueryClient()
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
-
+export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <React.Suspense>
-        <ApolloProvider client={client}>
-          <WagmiConfig config={config}>
+      <ApolloProvider client={client}>
+        <WagmiConfig config={config}>
+          <QueryClientProvider client={queryClient}>
             <QueryParamProvider adapter={NextAdapterApp}>
               <ConnectKitProvider>
                 <Header />
-                {mounted && children}
+                {children}
               </ConnectKitProvider>
             </QueryParamProvider>
-          </WagmiConfig>
-        </ApolloProvider>
-      </React.Suspense>
+          </QueryClientProvider>
+        </WagmiConfig>
+      </ApolloProvider>
       <Toaster position={'top-right'} />
     </>
   )

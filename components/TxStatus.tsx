@@ -1,10 +1,11 @@
 'use client'
 
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { BASE_URL, getCurrentExploerUrl } from '@/lib/config'
+import { apiGet } from '@/lib/api'
+import { getCurrentExploerUrl } from '@/lib/config'
 import { useSafe } from '@/lib/hooks/useSafe'
 import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TxTaskStatus } from '@/lib/types'
-import { cn, displayBn, parseBn } from '@/lib/utils'
+import { cn, displayBn, parseBn, sleep } from '@/lib/utils'
 import { Share2Icon } from '@radix-ui/react-icons'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -201,22 +202,25 @@ function PriceItem({
   )
 }
 
+export type StepType = {
+  step: 0 | 1 | 2
+  min: string
+  max: string
+  price?: string
+  priceType?: ValueType
+  txHash?: string
+}
+
 export type TxStatusProps = {
   type: 'loading' | 'fail' | 'step'
-  step?: {
-    step: 0 | 1 | 2
-    min: string
-    max: string
-    price?: string
-    priceType?: ValueType
-    txHash?: string
-  }
+  step?: StepType | StepType[]
   onClose?: () => void
   onRetry?: () => void
 }
 
 export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
-  const canClose = type == 'fail' || (type == 'step' && step && step.step == 2)
+  const steps = Array.isArray(step) ? step : step ? [step] : []
+  const canClose = type == 'fail' || (type == 'step' && steps && steps[0]?.step == 2)
   const wrapClose = () => {
     canClose && onClose && onClose()
   }
@@ -257,76 +261,86 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
             </Button>
           </div>
         )}
-        {type == 'step' && step && (
-          <div className='py-8 px-5 flex flex-col items-center gap-5 w-full'>
-            <Step3 step={step.step} />
-            <div className='flex flex-row items-center justify-between w-full'>
-              <Image src={'/sse.png'} alt='' width={80} height={80} />
-              <div className='flex flex-col gap-2 items-center  text-sm'>
-                <div className={cn(step.step == 0 ? '' : 'opacity-20')}>requests</div>
-                <LoadArrow anim={step.step == 0} position='>>' />
-                {step.step > 0 && <LoadArrow anim={step.step == 1} position='<<' />}
-                {step.step > 0 && <div className={step.step == 1 ? '' : 'opacity-20'}>back</div>}
+        {type == 'step' &&
+          steps.map((step, index) => (
+            <div className='flex w-full overflow-x-auto gap-2' key={`step_item_${index}`}>
+              <div className='w-full'>
+                <div className='py-8 px-5 flex flex-col items-center gap-5 w-full'>
+                  <Step3 step={step.step} />
+                  <div className='flex flex-row items-center justify-between w-full'>
+                    <Image src={'/sse.png'} alt='' width={80} height={80} />
+                    <div className='flex flex-col gap-2 items-center  text-sm'>
+                      <div className={cn(step.step == 0 ? '' : 'opacity-20')}>requests</div>
+                      <LoadArrow anim={step.step == 0} position='>>' />
+                      {step.step > 0 && <LoadArrow anim={step.step == 1} position='<<' />}
+                      {step.step > 0 && <div className={step.step == 1 ? '' : 'opacity-20'}>back</div>}
+                    </div>
+                    <Image src={'/chainlink.png'} alt='' width={80} height={80} />
+                  </div>
+                  {step.step > 0 && (
+                    <div className='flex flex-col gap-6 w-full'>
+                      <PriceItem tit='Max price:' value={step.max} />
+                      <PriceItem
+                        tit='Final price:'
+                        value={step.price}
+                        valueType={step.priceType}
+                        txHash={step.txHash}
+                      />
+                      <PriceItem tit='Min price:' value={step.min} />
+                    </div>
+                  )}
+                </div>
+                <div className='w-full px-5 py-5 border-t border-solid border-[#484848] text-center'>
+                  {step.step == 0 && <div>Node requests a random number from Chainlink</div>}
+                  {step.step == 1 && <div>Wait for Chainlink to back a random number</div>}
+                  {step.step == 2 && (
+                    <div className='flex items-center justify-between'>
+                      <Button
+                        variant='secondary'
+                        onClick={() => {
+                          if (pathname == '/my') {
+                            window.location.reload()
+                          } else {
+                            r.push('/my')
+                          }
+                        }}
+                      >
+                        View Profile
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (pathname.startsWith('/trade')) {
+                            window.location.reload()
+                          } else {
+                            r.push('/trade')
+                          }
+                        }}
+                      >
+                        Back to Marketplace
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-              <Image src={'/chainlink.png'} alt='' width={80} height={80} />
             </div>
-            {step.step > 0 && (
-              <div className='flex flex-col gap-6 w-full'>
-                <PriceItem tit='Max price:' value={step.max} />
-                <PriceItem tit='Final price:' value={step.price} valueType={step.priceType} txHash={step.txHash} />
-                <PriceItem tit='Min price:' value={step.min} />
-              </div>
-            )}
-          </div>
-        )}
-        {type == 'step' && step && (
-          <div className='w-full px-5 py-5 border-t border-solid border-[#484848] text-center'>
-            {step.step == 0 && <div>Node requests a random number from Chainlink</div>}
-            {step.step == 1 && <div>Wait for Chainlink to back a random number</div>}
-            {step.step == 2 && (
-              <div className='flex items-center justify-between'>
-                <Button
-                  variant='secondary'
-                  onClick={() => {
-                    if (pathname == '/my') {
-                      window.location.reload()
-                    } else {
-                      r.push('/my')
-                    }
-                  }}
-                >
-                  View Profile
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (pathname.startsWith('/trade')) {
-                      window.location.reload()
-                    } else {
-                      r.push('/trade')
-                    }
-                  }}
-                >
-                  Back to Marketplace
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+          ))}
       </DialogContent>
     </Dialog>
   )
 }
 
-
 export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
   const safeRef = useSafe()
   const [typestep, setTypeStep] = useState<Pick<TxStatusProps, 'type' | 'step'>>({ type: 'loading' })
   const [open, setOpen] = useState(false)
-  const setTxsOpen = useCallback((open: boolean) => {
-    setOpen(open)
-    safeRef.current = open
-    !open && setTypeStep({ type: 'loading' })
-  }, [safeRef])
+  const setTxsOpen = useCallback(
+    (open: boolean) => {
+      setOpen(open)
+      safeRef.current = open
+      !open && setTypeStep({ type: 'loading' })
+    },
+    [safeRef],
+  )
 
   const txsProps: TxStatusProps = useMemo(() => {
     return {
@@ -337,15 +351,12 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
     }
   }, [typestep, setTxsOpen, onRetry])
 
-  const intevalCheckStatus = (reqId: string, [min, max]: [string, string]) => {
+  const intevalCheckStatus = async (reqId: string, [min, max]: [string, string]) => {
     setTypeStep({ type: 'step', step: { step: 0, min, max } })
-    const itr = setInterval(async () => {
-      const r2 = await fetch(`${BASE_URL}/common/order/task/${reqId}/detail`)
-        .then((r) => r.json())
-        .then((data) => data.data as TxTaskStatus)
-        .catch(() => null)
-
-      if (r2?.task_status === PREPARE_SEND_SUCCESS) {
+    while (true) {
+      await sleep(5000)
+      const r2 = await apiGet<TxTaskStatus>(`/common/order/task/${reqId}/detail`).catch(() => null)
+      if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
         safeRef.current && setTypeStep({ type: 'step', step: { step: 1, min, max } })
       }
       if (
@@ -353,24 +364,23 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
         r2?.order_probability_detail &&
         r2?.order_probability_detail.length > 0
       ) {
-        clearInterval(itr)
         const opd = r2.order_probability_detail[0]
-
         safeRef.current &&
           setTypeStep({
             type: 'step',
             step: { step: 2, min, max, txHash: r2?.match_tx_hash, price: displayBn(parseBn(opd.price.toFixed(4))) },
           })
+        return true
       }
       if ((r2?.task_status || 0) < 0) {
-        clearInterval(itr)
         safeRef.current && setTypeStep({ type: 'fail' })
+        return false
       }
       console.info('safe:', safeRef.current)
       if (!safeRef.current) {
-        clearInterval(itr)
+        return false
       }
-    }, 5000)
+    }
   }
   return {
     txsProps,

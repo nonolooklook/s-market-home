@@ -5,13 +5,14 @@ import STable from '@/components/SimpleTable'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useTradePairs } from '@/lib/hooks/useTradePairs'
+import { TradePair } from '@/lib/types'
 import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
-import { Suspense, useMemo, useState } from 'react'
-import { Providers } from './providers'
-import { TxStatus } from '@/components/TxStatus'
+import { useRouter } from 'next/navigation'
+import { ReactNode, useMemo, useState } from 'react'
 
-function Home() {
+export default function Home() {
   const nftTabs = useMemo<string[]>(() => {
     return ['🔥 Trending', '🌈 PFP', '🌟 Watchlist']
   }, [])
@@ -20,40 +21,51 @@ function Home() {
     return ['🔥 ALL', '🌈 FAVORITES']
   }, [])
   const [currentTokenTab, seTokenTab] = useState<string>(tokenTabs[0])
+  const { pairs } = useTradePairs()
 
-  const nfts = useMemo(() => {
-    return _.range(1, 11).map((num) => [
-      <div key={'star'} className='flex items-center gap-4'>
-        <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
-        {num}
-      </div>,
-      <div key={'project'} className='flex items-center gap-2'>
-        <img src='/nfts.png' className='w-10 h-10 rounded-full' />
-        <div className='font-semibold'>Project X</div>
-      </div>,
-      '5,678.45',
-      '5,678.45',
-      <DeltaPecent key={'pencent'} value={(0.5 - _.random(true)) * 3} />,
-      '100000',
-    ])
-  }, [])
-
-  const tokens = useMemo(() => {
-    return _.range(1, 11).map((num) => [
-      <div key={'star'} className='flex items-center'>
-        <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
-      </div>,
-      <div key={'project'} className='flex items-center gap-2'>
-        <img src='/tokens.png' className='w-10 h-10 rounded-full' />
-        <div className='font-semibold'>BTC</div>
-        <div className='text-gray-400'>Bitcoin</div>
-      </div>,
-      '5,678.45',
-      <DeltaPecent key={'percent'} value={(0.5 - _.random(true)) * 3} />,
-      '5,678.45',
-      '¥2348,121,123B',
-    ])
-  }, [])
+  const [nfts, tokens, _nfts, _tokens] = useMemo(() => {
+    const mnfts: ReactNode[][] = []
+    const mtokens: ReactNode[][] = []
+    const _nfts: TradePair[] = []
+    const _tokens: TradePair[] = []
+    pairs.forEach((item) => {
+      if (item.assetType == 'ERC20') {
+        _tokens.push(item)
+        mtokens.push([
+          <div key={'star'} className='flex items-center'>
+            <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+          </div>,
+          <div key={'project'} className='flex items-center gap-2'>
+            <img src={item.assetImg} className='w-10 h-10 rounded-full' />
+            <div className='font-semibold'>{item.name}</div>
+            {/* <div className='text-gray-400'>Bitcoin</div> */}
+          </div>,
+          `$${item.tradeInfo?.price?.toFixed(2)}`, // price
+          <DeltaPecent key={'percent'} value={_.toNumber(item.tradeInfo.volumeChange24 || '0')} />,
+          `$${item.tradeInfo.volume24?.toFixed(2)}`,
+          `$${item.tradeInfo.marketCap?.toFixed()}`,
+        ])
+      } else {
+        _nfts.push(item)
+        mnfts.push([
+          <div key={'star'} className='flex items-center gap-4'>
+            <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+            {mnfts.length + 1}
+          </div>,
+          <div key={'project'} className='flex items-center gap-2'>
+            <img src={item.assetImg} className='w-10 h-10 rounded-full' />
+            <div className='font-semibold'>{item.name}</div>
+          </div>,
+          `$${item.tradeInfo?.floorPrice?.toFixed(2)}`, // floorPrice,
+          `$${item.tradeInfo.volume24?.toFixed(2)}`,
+          <DeltaPecent key={'pencent'} value={_.toNumber(item.tradeInfo.volumeChange24 || '0')} />,
+          `${item.tradeInfo.totalSupply}`,
+        ])
+      }
+    })
+    return [mnfts, mtokens, _nfts, _tokens]
+  }, [pairs])
+  const r = useRouter()
   return (
     <main>
       <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
@@ -86,18 +98,19 @@ function Home() {
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-full'>
         {/* Nfts */}
         <div className='flex flex-col gap-5'>
-          <div className='flex gap-2'>
+          <div className='flex gap-2 gap-y-4 flex-wrap'>
             {nftTabs.map((t) => (
               <Button key={t} onClick={() => setNftTab(t)} variant={currentNftTab == t ? 'default' : 'secondary'}>
                 {t}
               </Button>
             ))}
-            <div className='flex-1' />
-            <Input placeholder='Please Search For Name' className='max-w-md' />
+
+            <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' />
           </div>
           <Card className='overflow-x-auto'>
             <STable
               className='min-w-[42.5rem]'
+              onClickRow={(index) => r.push(`/trade/${_nfts[index].id}`)}
               span={[2, 4, 3, 3, 3, 3]}
               header={['', 'Collection', 'Floor Price', '24H Volume', '24H Change', 'Supply']}
               data={nfts}
@@ -106,19 +119,20 @@ function Home() {
         </div>
         {/* Tokens */}
         <div className='flex flex-col gap-5'>
-          <div className='flex gap-2'>
+          <div className='flex gap-2 gap-y-4 flex-wrap'>
             {tokenTabs.map((t) => (
               <Button key={t} onClick={() => seTokenTab(t)} variant={currentTokenTab == t ? 'default' : 'secondary'}>
                 {t}
               </Button>
             ))}
-            <div className='flex-1' />
-            <Input placeholder='Please Search For Name' className='max-w-md' />
+
+            <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' />
           </div>
           <Card className='overflow-x-auto'>
             <STable
-              className='min-w-[42.5rem]'
-              span={[1, 4, 2, 2, 2, 3]}
+              className='min-w-[45rem]'
+              onClickRow={(index) => r.push(`/trade/${_tokens[index].id}`)}
+              span={[1, 2, 2, 2, 2, 3]}
               header={['', 'Name', 'Price', '24H Volume', '24H Change', 'Marketcap']}
               data={tokens}
             />
@@ -126,13 +140,5 @@ function Home() {
         </div>
       </div>
     </main>
-  )
-}
-
-export default function Page() {
-  return (
-    <Providers>
-      <Home />
-    </Providers>
   )
 }

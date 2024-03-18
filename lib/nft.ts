@@ -319,36 +319,36 @@ export const erc1155ABI = [
   },
 ] as const
 
-export function useTradePairMeta(tp: TradePair) {
-  const [data, setData] = useState<{
-    name: string
-    image: string
-  }>()
-  const pc = usePublicClient()
+// export function useTradePairMeta(tp: TradePair) {
+//   const [data, setData] = useState<{
+//     name: string
+//     image: string
+//   }>()
+//   const pc = usePublicClient()
 
-  useEffect(() => {
-    if (tp.assetType == 'ERC1155') {
-      pc.readContract({
-        abi: erc1155ABI,
-        address: tp.asset,
-        functionName: 'uri',
-        args: [tp.assetId as bigint],
-      })
-        .then((url) => {
-          if (url) return fetch(url.replace('ipfs://', 'https://cf-ipfs.com/ipfs/')).then((res) => res.json())
-          return Promise.resolve(null)
-        })
-        .then((meta) => {
-          setData({
-            name: meta.name,
-            image: ((meta.image as string) || '').replace('ipfs://', 'https://cf-ipfs.com/ipfs/'),
-          })
-        })
-    }
-  }, [tp, pc])
+//   useEffect(() => {
+//     if (tp.assetType == 'ERC1155') {
+//       pc.readContract({
+//         abi: erc1155ABI,
+//         address: tp.asset,
+//         functionName: 'uri',
+//         args: [tp.assetId as bigint],
+//       })
+//         .then((url) => {
+//           if (url) return fetch(url.replace('ipfs://', 'https://cf-ipfs.com/ipfs/')).then((res) => res.json())
+//           return Promise.resolve(null)
+//         })
+//         .then((meta) => {
+//           setData({
+//             name: meta.name,
+//             image: ((meta.image as string) || '').replace('ipfs://', 'https://cf-ipfs.com/ipfs/'),
+//           })
+//         })
+//     }
+//   }, [tp, pc])
 
-  return { meta: data }
-}
+//   return { meta: data }
+// }
 
 export async function approveOffer(clients: Clients, item: OfferItem, offerer: Address, spender: Address) {
   const { wc, pc } = clients
@@ -368,7 +368,8 @@ export async function approveOffer(clients: Clients, item: OfferItem, offerer: A
         functionName: 'approve',
         args: [spender, parseBn('999999999999')],
       })
-      await wc.writeContract(request)
+      const hash = await wc.writeContract(request)
+      await pc.waitForTransactionReceipt({ hash })
     }
   } else if (item.itemType == 2 || item.itemType == 3) {
     const approvedAll = await pc.readContract({
@@ -385,7 +386,8 @@ export async function approveOffer(clients: Clients, item: OfferItem, offerer: A
         functionName: 'setApprovalForAll',
         args: [spender, true],
       })
-      await wc.writeContract(request)
+      const hash = await wc.writeContract(request)
+      await pc.waitForTransactionReceipt({ hash })
     }
   }
 }

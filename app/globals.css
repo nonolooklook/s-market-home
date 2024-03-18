@@ -75,7 +75,7 @@
     font-family: var(--font);
   }
   main {
-    @apply flex flex-col px-11 gap-8 py-5;
+    @apply flex flex-col px-4 md:px-11 gap-8 py-5;
   }
 }
 

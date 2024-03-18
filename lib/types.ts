@@ -26,15 +26,18 @@ export type TradePair = {
   id: string
   asset: Address // ERC20 ERC721 ERC1155
   assetType: 'ERC20' | 'ERC721' | 'ERC1155'
+  assetImg?: string
   assetId?: bigint
+  name: string
   token: Address
   tokenSymbol: string
+  tradeInfo: TradePairDetails['collectionDetail']['trading_info']
 }
 
-export function assetTypeToItemType(at: TradePair['assetType']) {
+export function assetTypeToItemType(at: TradePair['assetType'], bid?: boolean) {
   if (at == 'ERC20') return 1
   if (at == 'ERC1155') return 3
-  return 2
+  return bid ? 4 : 2
 }
 
 export type MatchOrdersFulfillment = {
@@ -57,9 +60,9 @@ export type OrderParameters = {
 }
 
 export type Order = {
-  denominator: number
+  denominator: string
   extraData: Address
-  numerator: number
+  numerator: string
   signature: Address
   parameters: OrderParameters
 }
@@ -79,7 +82,7 @@ export type OrderWrapper = {
   order_start_time: number
   order_state: number
   order_type: number
-  remaining_item_size: number
+  remaining_item_size: string
   token_address: number
   update_time: string
 }
@@ -175,7 +178,7 @@ interface PaymentToken {
 interface CollectionDetail {
   id: number
   name: string
-  icon_url: string | null
+  icon_url: string
   contract_address: string
   collection_slug: string
   contract_type: number
@@ -193,6 +196,7 @@ interface CollectionDetail {
     wiki_url: string
     contracts: Contract[]
     image_url: string
+    imageUrl: string
     collection: string
     description: string
     discord_url: string
@@ -214,7 +218,9 @@ interface CollectionDetail {
     owners: number
     sales24: number
     volume24: number
-    floorPrice: number
+    marketCap?: number
+    floorPrice?: number
+    price?: number
     totalSupply: number
     volumeChange24: string
   }
@@ -250,8 +256,9 @@ interface TokenDetail {
   update_time: string
 }
 
-export interface Data {
-  floorPrice: string
+export interface TradePairDetails {
+  floorPrice?: string
+  price?: string
   collectionDetail: CollectionDetail
   tokenDetail: TokenDetail
   volume24: string

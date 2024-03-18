@@ -1,8 +1,9 @@
-import { useTpOrderDistribution } from '@/lib/hooks/useTpOrderDistribution'
+
 import { DistributionItem, TradePair } from '@/lib/types'
 import { CrossCircledIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 import { Button } from './ui/button'
+import { useTpOrderDistribution } from '@/lib/api'
 const precisions = [0.01, 0.1, 1, 10, 50, 100]
 
 const empty: DistributionItem[] = []

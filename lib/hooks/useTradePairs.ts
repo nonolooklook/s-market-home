@@ -1,13 +1,15 @@
 import { Address } from 'wagmi'
 import { create } from 'zustand'
-import { BASE_URL } from '../config'
-import { TradePair } from '../types'
+import { apiGet } from '../api'
+import { TradePair, TradePairDetails } from '../types'
 
 type TP = {
   id: number
   collection_address: Address
   collection_type: number
   token_address: Address
+  token_id: number
+  name: string
   status: number
   create_time: string
   update_time: string
@@ -17,22 +19,25 @@ export type UseTradePairs = {
   pairs: TradePair[]
   autoupdate: () => Promise<void>
 }
-const useTradePairs = create<UseTradePairs>((set) => ({
+export const useTradePairs = create<UseTradePairs>((set) => ({
   pairs: [],
   autoupdate: async () => {
     while (true) {
       try {
-        const url = `${BASE_URL}/common/order/tradingPair/list`
-        const datas = await fetch(url)
-          .then((res) => res.json())
-          .then((data) => data.data as TP[])
-        const pairs = datas.map<TradePair>((tp) => ({
+        const datas = await apiGet<TP[]>(`/common/order/tradingPair/list`)
+        const details = await Promise.all(
+          datas.map((tp) => apiGet<TradePairDetails>(`/common/order/tradingPair/${tp.id}/collection/detail`)),
+        )
+        const pairs = datas.map<TradePair>((tp, index) => ({
           id: tp.id.toFixed(),
-          assetType: 'ERC1155',
-          assetId: 1n,
+          assetType: tp.collection_type == 1 ? 'ERC1155' : tp.collection_type == 0 ? 'ERC20' : 'ERC721',
+          assetId: BigInt(tp.token_id),
+          assetImg: details?.[index]?.collectionDetail?.base_info?.imageUrl || details?.[index]?.collectionDetail?.base_info?.image_url,
+          name: details?.[index]?.collectionDetail?.name || '-',
           asset: tp.collection_address,
           token: tp.token_address,
-          tokenSymbol: 'USDC',
+          tokenSymbol: details?.[index]?.tokenDetail?.name || '-',
+          tradeInfo: details?.[index]?.collectionDetail?.trading_info,
         }))
         set({ pairs })
         await new Promise((resolve) => setTimeout(resolve as any, 60 * 60 * 1000))

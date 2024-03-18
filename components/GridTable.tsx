@@ -1,10 +1,8 @@
 import { cn } from '@/lib/utils'
-import React, { CSSProperties, ReactNode, useState } from 'react'
-import { RowTip } from './RowTooltip'
-import HoverModalList from './modal/HoverModalList'
+import { CSSProperties, ReactNode } from 'react'
 
 export interface TableProps {
-  keyS: string
+  keyS?: string
   header: ReactNode[]
   data: ReactNode[][]
   list?: any[]
@@ -31,7 +29,7 @@ export function DefEmpty() {
 }
 
 export const GridTable = ({
-  keyS,
+  keyS = 'grid_table',
   header,
   data,
   span = {},
@@ -44,7 +42,6 @@ export const GridTable = ({
   rowStyle,
   cellClassName,
   onClickRow,
-  list = [],
   onRowMouseHover,
 }: TableProps) => {
   const gridTemplateColumns = header
@@ -96,33 +93,14 @@ export const GridTable = ({
             {items.map((value, i) => {
               if (i >= header.length) return <>{value}</>
               return (
-                <div key={`list_${i}`}>
-                  {list && list.length ? (
-                    <RowTip
-                      content={<HoverModalList order={list[index]} />}
-                      chilren={
-                        <div
-                          key={keyS + '_cell_' + i}
-                          className={cn(
-                            'px-3 py-2 text-base',
-                            typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
-                          )}
-                        >
-                          {value}
-                        </div>
-                      }
-                    />
-                  ) : (
-                    <div
-                      key={keyS + '_cell_' + i}
-                      className={cn(
-                        'px-3 py-2 text-base',
-                        typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
-                      )}
-                    >
-                      {value}
-                    </div>
+                <div
+                  key={`${keyS}_cell_${i}`}
+                  className={cn(
+                    'px-3 py-2 text-base',
+                    typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
                   )}
+                >
+                  {value}
                 </div>
               )
             })}
