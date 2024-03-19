@@ -1,4 +1,4 @@
-import { displayBn, fmtBn } from '@/lib/utils'
+import { displayBn, fmtBn, parseBn } from '@/lib/utils'
 import React from 'react'
 import { InputWithButton } from './InputWithButton'
 import { Input } from './ui/input'
@@ -11,13 +11,26 @@ interface Props {
   info?: string
 }
 
+function checkInput(input: string) {
+  try {
+    parseBn(input)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 export const AssetInput: React.FC<Props> = ({ amount, setAmount, isErc20, max, info }) => {
   const asseetDecimals = isErc20 ? 18 : 0
   if (isErc20) {
     return (
       <div className='w-full flex flex-col gap-4'>
         <div>Quantity</div>
-        <Input pattern='[0-9.]*' value={amount} onChange={(e) => setAmount(e.target.value.replaceAll('-', ''))} />
+        <Input
+          pattern='[0-9.]*'
+          value={amount}
+          onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
+        />
         {max != undefined && (
           <div
             className={'cursor-pointer w-fit'}

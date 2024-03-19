@@ -353,7 +353,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
       )}
       {openBuy && <BuyForList open={true} onOpenChange={() => setOpenBuy(undefined)} tp={tp} order={openBuy} />}
       {openSell && <SellForBid open={true} onOpenChange={() => setOpenSell(undefined)} tp={tp} order={openSell} />}
-      {buyTxs.txsOpen || (sellTxs.txsOpen && <TxStatus {...(buyTxs.txsOpen ? buyTxs.txsProps : sellTxs.txsProps)} />)}
+      {(buyTxs.txsOpen || sellTxs.txsOpen) && <TxStatus {...(buyTxs.txsOpen ? buyTxs.txsProps : sellTxs.txsProps)} />}
     </main>
   )
 }
