@@ -105,9 +105,9 @@ export default function Home() {
               </Button>
             ))}
 
-            <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' />
+            {/* <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' /> */}
           </div>
-          <Card className='overflow-x-auto'>
+          <Card className='overflow-x-auto flex-1'>
             <STable
               className='min-w-[42.5rem]'
               onClickRow={(index) => r.push(`/trade/${_nfts[index].id}`)}
@@ -126,9 +126,9 @@ export default function Home() {
               </Button>
             ))}
 
-            <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' />
+            {/* <Input placeholder='Please Search For Name' className='max-w-md w-full ml-auto min-w-[10rem]' /> */}
           </div>
-          <Card className='overflow-x-auto'>
+          <Card className='overflow-x-auto flex-1'>
             <STable
               className='min-w-[45rem]'
               onClickRow={(index) => r.push(`/trade/${_tokens[index].id}`)}
