@@ -30,9 +30,12 @@ export const useTradePairs = create<UseTradePairs>((set) => ({
         )
         const pairs = datas.map<TradePair>((tp, index) => {
           const assetType = tp.collection_type == 1 ? 'ERC1155' : tp.collection_type == 0 ? 'ERC20' : 'ERC721'
-          const assetId = tp.token_id ? BigInt(tp.token_id) : undefined
-          const assetImg = details?.[index]?.collectionDetail?.base_info?.imageUrl || details?.[index]?.collectionDetail?.base_info?.image_url
-          const name = details?.[index]?.collectionDetail?.name || details?.[index]?.collectionDetail?.base_info?.name || ''
+          const assetId = tp.token_id ? BigInt(tp.token_id) : 0n
+          const assetImg =
+            details?.[index]?.collectionDetail?.base_info?.imageUrl ||
+            details?.[index]?.collectionDetail?.base_info?.image_url
+          const name =
+            details?.[index]?.collectionDetail?.name || details?.[index]?.collectionDetail?.base_info?.name || ''
           const assetName = assetType == 'ERC1155' ? `${name} #${assetId}` : name
           return {
             id: tp.id.toFixed(),

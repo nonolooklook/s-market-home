@@ -42,11 +42,15 @@ import { Header } from '@/components/header'
 import NextAdapterApp from 'next-query-params/app'
 import { QueryParamProvider } from 'use-query-params'
 import { Toaster } from 'sonner'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 const queryClient = new QueryClient()
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || ''
+  const isSimulation = pathname.includes('simulation')
   return (
-    <>
+    <div className={cn('w-full h-full min-h-full flex flex-col', { 'bg-green-50/50': isSimulation })}>
       <ApolloProvider client={client}>
         <WagmiConfig config={config}>
           <QueryClientProvider client={queryClient}>
@@ -60,6 +64,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         </WagmiConfig>
       </ApolloProvider>
       <Toaster position={'top-right'} />
-    </>
+    </div>
   )
 }

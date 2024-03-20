@@ -3,15 +3,13 @@
 import { memoAccount } from '@/lib/order'
 import { cn } from '@/lib/utils'
 import { ChainIcon, ConnectKitButton } from 'connectkit'
-import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
+import { FiMenu } from "react-icons/fi"
 import { useMediaQuery } from 'usehooks-ts'
 import { Address, useAccount, useNetwork } from 'wagmi'
 import { Button } from './ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuItem } from './ui/dropdown-menu'
-import { DropdownMenuIcon } from '@radix-ui/react-icons'
-import { FiMenu } from "react-icons/fi";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 const links = [
   { href: '/', label: 'Market' },
   { href: '/trade', label: 'Trade' },

@@ -10,7 +10,7 @@ const nextConfig = {
       // Basic redirect
       {
         source: '/trade',
-        destination: '/trade/erc1155',
+        destination: '/trade/1',
         permanent: true,
       },
     ]
