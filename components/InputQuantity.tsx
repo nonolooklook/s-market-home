@@ -1,3 +1,4 @@
+import { parseBn } from '@/lib/utils'
 import { InputWithButton } from './InputWithButton'
 import { Input } from './ui/input'
 
@@ -28,6 +29,15 @@ export function InputQuantity({
   )
 }
 
+function checkInput(input: string) {
+  try {
+    parseBn(input)
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
 export function InputQuantityValue({
   amount,
   setAmount,
@@ -49,7 +59,7 @@ export function InputQuantityValue({
           pattern='[0-9.]*'
           value={amount}
           disabled={disable}
-          onChange={(e) => setAmount(e.target.value.replaceAll('-', ''))}
+          onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
         />
         <div>{value}</div>
       </div>

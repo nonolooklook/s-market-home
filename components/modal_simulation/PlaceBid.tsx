@@ -1,7 +1,6 @@
 import { BetaD3Chart } from '@/components/BetaD3Chart'
 import { Spinner } from '@/components/Spinner'
-import { postOrder } from '@/lib/api'
-import { createOrder, useClients } from '@/lib/market'
+import { createOrder } from '@/lib/market_simulation'
 import { ItemType, TradePair, assetTypeToItemType } from '@/lib/types'
 import { displayBn, parseBn } from '@/lib/utils'
 import _ from 'lodash'
@@ -15,6 +14,8 @@ import { useTpBalance } from '../TpBalance'
 import { TradePairPrice } from '../TradePairPrice'
 import { Button } from '../ui/button'
 import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
+import { postOrder } from '@/lib/api_simulation'
+import { useClients } from '@/lib/market'
 
 export const PlaceBid = ({
   open,
@@ -30,9 +31,8 @@ export const PlaceBid = ({
   const [amount, setAmount] = useState('1')
   const amountBn = parseBn(amount, asseetDecimals)
   const account = useAccount()
-  const { data: [,balance] = [0n, 0n] } = useTpBalance(tp, false)
+  const { data: [, balance] = [0n, 0n] } = useTpBalance(tp, true)
   const enableBid = balance >= parseBn(max as `${number}`) * parseBn(amount as `${number}`, 0)
-
   const clients = useClients()
   const onClick = async () => {
     // create()

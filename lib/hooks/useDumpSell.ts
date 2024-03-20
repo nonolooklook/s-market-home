@@ -1,16 +1,25 @@
+import { useTpBalance } from '@/components/TpBalance'
 import { useTxStatus } from '@/components/TxStatus'
 import _ from 'lodash'
 import { useMemo, useRef, useState } from 'react'
 import { Address, useAccount } from 'wagmi'
+import { fillOrders } from '../api'
+import { fillOrders as simFillOrders } from '../api_simulation'
 import { FEE_ADDRESS } from '../config'
-import { CreatedOrder, fillOrders, useClients, useCreateOrder } from '../market'
+import { CreatedOrder, createOrder, useClients } from '../market'
+import { CreatedOrder as SimCreatedOrder, createOrder as simCreateOrder } from '../market_simulation'
 import { getOrderPerMinMax, isSelfMaker } from '../order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '../types'
 import { handleError, parseBn, sleep } from '../utils'
 import { useRequestMatchOrder } from './useRequestMatchOrder'
-import { useAssetBalance } from './useTokenBalance'
 
-export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number, onSuccess?: () => void) {
+export function useDumpSell(
+  tp: TradePair,
+  orders: OrderWrapper[],
+  count: number,
+  onSuccess?: () => void,
+  isSimulation?: boolean,
+) {
   const clients = useClients()
   const [loading, setLoading] = useState(false)
   const isErc20 = tp.assetType === 'ERC20'
@@ -41,12 +50,14 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
     })
   }, [orders, count])
   const { address } = useAccount()
-  const { balance } = useAssetBalance(tp)
+  const { data: [balance] = [0n, 0n] } = useTpBalance(tp, isSimulation)
   const disabledDumpSell = !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || countBn > balance
-  const create = useCreateOrder()
   const reqMatchOrder = useRequestMatchOrder()
   const refRetry = useRef<() => any>()
-  const txs = useTxStatus(() => refRetry.current && refRetry.current())
+  const txs = useTxStatus({
+    onRetry: () => refRetry.current?.(),
+    isSimulation,
+  })
   const dumpSell = async () => {
     if (disabledDumpSell || loading) return
     try {
@@ -54,7 +65,7 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
       txs.setTypeStep({ type: 'loading' })
       txs.setTxsOpen(true)
       const fullfillments: MatchOrdersFulfillment[] = []
-      const createdOrders: CreatedOrder[] = []
+      const createdOrders: (CreatedOrder | SimCreatedOrder)[] = []
       const mLength = makerOrders.length
       for (let i = 0; i < mLength; ++i) {
         const makerO = makerOrders[i]
@@ -63,7 +74,9 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
         const startAmount = (BigInt(makerO.detail.parameters.offer[0].startAmount) * numerator) / denominator
         const endAmount = (BigInt(makerO.detail.parameters.offer[0].endAmount) * numerator) / denominator
         const countForMaker = (BigInt(makerO.detail.parameters.consideration[0].startAmount) * numerator) / denominator
-        const createdOrder = await create(
+        const takerOrder = await (isSimulation ? simCreateOrder : createOrder)(
+          clients,
+          address,
           [
             {
               itemType: assetTypeToItemType(tp.assetType),
@@ -93,7 +106,7 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
           ],
           0,
         )
-        createdOrders.push(createdOrder)
+        createdOrders.push(takerOrder)
         fullfillments.push({
           offerComponents: [{ orderIndex: i, itemIndex: 0 }],
           considerationComponents: [{ orderIndex: mLength + i, itemIndex: 0 }],
@@ -109,7 +122,7 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
       }
 
       await sleep(2000)
-      const res = await fillOrders(tp, {
+      const res = await (isSimulation ? simFillOrders : fillOrders)(tp, {
         // randomNumberCount: mLength,
         makerOrders: makerOrders.map((m) => m.detail),
         takerOrders: createdOrders.map((m) => m.order) as any,
@@ -118,7 +131,7 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
       const hashes = makerOrders
         .map<Address>((m) => m.order_hash)
         .concat(createdOrders.map<Address>((m) => m.orderHash))
-      await reqMatchOrder(hashes)
+      !isSimulation && (await reqMatchOrder(hashes))
       const success = await txs.intevalCheckStatus(res.hash, getOrderPerMinMax(makerOrders[0].detail, tp))
       success && onSuccess && onSuccess()
       setLoading(false)

@@ -1,6 +1,16 @@
 import { DECIMAL18 } from '@/lib/config'
+import { parseBn } from '@/lib/utils'
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons'
 import { parseEther, formatEther } from 'viem'
+
+function checkInput(input: string) {
+  try {
+    parseBn(input)
+    return true
+  } catch (error) {
+    return false
+  }
+}
 
 export const InputWithButton = ({
   amount,
@@ -33,7 +43,7 @@ export const InputWithButton = ({
         value={amount}
         disabled={disable}
         pattern='[0-9]*'
-        onChange={(e) => setAmount(e.target.value?.replaceAll('-', ''))}
+        onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
       />
 
       <div

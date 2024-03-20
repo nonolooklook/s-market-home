@@ -1,25 +1,26 @@
 'use client'
 import GridTable from '@/components/GridTable'
 import { PriceChart } from '@/components/PriceChart'
+import { RequestCoins } from '@/components/RequestCoins'
 import { RowTip } from '@/components/RowTooltip'
 import { Spinner } from '@/components/Spinner'
 import { TpBalance } from '@/components/TpBalance'
 import { TxStatus } from '@/components/TxStatus'
-import { BuyForList } from '@/components/modal/BuyForList'
-import HoverModalList from '@/components/modal/HoverModalList'
-import { ListForSale } from '@/components/modal/ListForSell'
-import { PlaceBid } from '@/components/modal/PlaceBid'
-import { SellForBid } from '@/components/modal/SellForBid'
+import { BuyForList } from '@/components/modal_simulation/BuyForList'
+import HoverModalList from '@/components/modal_simulation/HoverModalList'
+import { ListForSale } from '@/components/modal_simulation/ListForSell'
+import { PlaceBid } from '@/components/modal_simulation/PlaceBid'
+import { SellForBid } from '@/components/modal_simulation/SellForBid'
 import { Button } from '@/components/ui/button'
 import { DollarIcon, VoiceIcon } from '@/components/ui/icons'
 import { Input } from '@/components/ui/input'
-import { useOrderList, useTradePairDetail } from '@/lib/api'
+import { useOrderList, useTradePairDetail } from '@/lib/api_simulation'
 import { useDumpBuy } from '@/lib/hooks/useDumpBuy'
 import { useDumpSell } from '@/lib/hooks/useDumpSell'
 import { useGetTradePair } from '@/lib/hooks/useTradePairs'
 import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
 import { OrderWrapper, TradePair } from '@/lib/types'
-import { cn, dealUrl, fmtBn, parseBn } from '@/lib/utils'
+import { dealUrl, fmtBn, parseBn } from '@/lib/utils'
 import { DiscordIcon } from '@/public/Discord'
 import { TwitterIcon } from '@/public/Twitter'
 import { StarFilledIcon } from '@radix-ui/react-icons'
@@ -89,28 +90,30 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const [buyCount, setBuyCount] = useState(0)
   const [sellCount, setSellCount] = useState(0)
   const tpBalanceRef = useRef<() => void>(null)
+  const onSuccessDumpBuy = () => {
+    setBuyCount(0)
+    refetchOrderList()
+    tpBalanceRef.current?.()
+  }
   const {
     dumpBuy,
     disabledDumpBuy,
     makerOrders: buyOrders,
     loading: loadingDumpBuy,
     txs: buyTxs,
-  } = useDumpBuy(tp, listdata, buyCount, () => {
-    setBuyCount(0)
+  } = useDumpBuy(tp, listdata, buyCount, onSuccessDumpBuy, true)
+  const onSuccessDumpSell = () => {
+    setSellCount(0)
     refetchOrderList()
     tpBalanceRef.current?.()
-  })
+  }
   const {
     dumpSell,
     disabledDumpSell,
     makerOrders: sellOrders,
     loading: loadingDumpSell,
     txs: sellTxs,
-  } = useDumpSell(tp, bidsdata, sellCount, () => {
-    setSellCount(0)
-    refetchOrderList()
-    tpBalanceRef.current?.()
-  })
+  } = useDumpSell(tp, bidsdata, sellCount, onSuccessDumpSell, true)
 
   const bids = useMemo(() => {
     return bidsdata.map((o) => {
@@ -268,9 +271,10 @@ function TpTrade({ tp }: { tp: TradePair }) {
         </div>
       </div>
 
-      <div className='flex justify-end items-center gap-[10px] '>
-        <TpBalance tp={tp} isSimulation={false} ref={tpBalanceRef} />
-        <Button onClick={() => r.push(`/trade/simulation/${tp.id}`)}>Simulation</Button>
+      <div className='flex justify-end gap-[10px] items-center'>
+        <TpBalance tp={tp} isSimulation ref={tpBalanceRef} />
+        <Button onClick={() => r.push(`/trade/${tp.id}`)}>Real</Button>
+        <RequestCoins tp={tp} onSuccess={() => tpBalanceRef.current?.()} />
         <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>
           History
         </Button>
@@ -381,9 +385,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
 
 export default function Home({ params }: any) {
   const slug: string = params?.slug || ''
-  const isSimulation = slug.startsWith('simulation')
-  const id = isSimulation ? slug.slice(10) : slug
-  const tp = useGetTradePair(id)
+  const tp = useGetTradePair(slug)
   if (!tp) return null
   return <TpTrade tp={tp} />
 }

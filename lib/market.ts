@@ -1,48 +1,15 @@
 import _ from 'lodash'
-import { Address, zeroAddress, hexToBigInt, toHex } from 'viem'
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { Address, toHex, zeroAddress } from 'viem'
+import { usePublicClient, useWalletClient } from 'wagmi'
 import { MarketABI } from './abi/MarketAbi'
+import { getCurrentMarketAddress } from './config'
 import { approveOffer } from './nft'
 import {
   Clients,
   ConsiderationItem,
-  ItemType,
-  MATCH_SUCCESS,
-  MatchOrdersFulfillment,
-  OfferItem,
-  Order,
-  PREPARE_SEND_SUCCESS,
-  TradePair,
-  TxTaskStatus,
+  OfferItem
 } from './types'
-import { parseBn, sleep, toJson } from './utils'
-import { BASE_URL, getCurrentMarketAddress } from './config'
-import { toast } from 'sonner'
-import { apiGet, apiPost } from './api'
-
-export function getOfferOrConsiderationItem<T extends ConsiderationItem | OfferItem>(
-  itemType: ItemType,
-  token: Address,
-  identifierOrCriteria: string,
-  startAmount: string,
-  endAmount: string,
-  recipient?: Address,
-): T {
-  const offerItem: OfferItem = {
-    itemType: itemType.valueOf(),
-    token,
-    identifierOrCriteria,
-    startAmount,
-    endAmount,
-  }
-  if (recipient) {
-    return {
-      ...offerItem,
-      recipient: recipient as string,
-    } as T
-  }
-  return offerItem as T
-}
+import { parseBn } from './utils'
 
 const ZeroHash: Address = '0x0000000000000000000000000000000000000000000000000000000000000000'
 const ZeroAddress: Address = zeroAddress
@@ -191,57 +158,7 @@ export async function createOrder(
   }
 }
 
-export function useCreateOrder() {
-  const clients = useClients()
-  const account = useAccount()
-  const create = (offer: OfferItem[], consideration: ConsiderationItem[], orderType: number) => {
-    console.info('acc:', account)
-    if (!account || !account.address) throw 'Not connected'
-    return createOrder(clients, account.address, offer, consideration, orderType)
-  }
-  return create
-}
 
 type UnPromise<T> = T extends Promise<infer U> ? U : never
 
 export type CreatedOrder = UnPromise<ReturnType<typeof createOrder>>
-
-export async function postOrder(tp: TradePair, order: CreatedOrder) {
-  if (!order) throw 'Order is empty'
-  await apiPost(`/common/order/tradingPair/${tp.id}/create`, {
-    hash: order.orderHash,
-    entry: order.order,
-  })
-}
-
-export async function fillOrders(
-  tp: TradePair,
-  data: {
-    makerOrders: Order[]
-    takerOrders: Order[]
-    modeOrderFulfillments: MatchOrdersFulfillment[]
-  },
-) {
-  const res = await apiPost<{ hash: string }>(`/common/order/tradingPair/${tp.id}/fillOrder`, data)
-  if (!res?.hash) throw 'Fill order error'
-  return res
-}
-
-export async function loopCheckFillOrders(res: UnPromise<ReturnType<typeof fillOrders>>, action: string) {
-  while (true) {
-    const r2 = await apiGet<TxTaskStatus>(`/common/order/task/${res.hash}/detail`).catch(() => null)
-    if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
-      toast.info('ChainLink random number requested')
-    }
-    if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {
-      // r2.order_probability_detail
-      toast.success(`${action} success`)
-      break
-    }
-    if ((r2?.task_status || 0) < 0) {
-      toast.error(`${action} error!`)
-      break
-    }
-    await sleep(5000)
-  }
-}

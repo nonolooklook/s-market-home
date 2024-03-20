@@ -37,7 +37,7 @@ export default function Home() {
           </div>,
           <div key={'project'} className='flex items-center gap-2'>
             <img src={item.assetImg} className='w-10 h-10 rounded-full' />
-            <div className='font-semibold'>{item.name}</div>
+            <div className='font-semibold'>{item.assetName}</div>
             {/* <div className='text-gray-400'>Bitcoin</div> */}
           </div>,
           `$${item.tradeInfo?.price?.toFixed(2)}`, // price
@@ -54,7 +54,7 @@ export default function Home() {
           </div>,
           <div key={'project'} className='flex items-center gap-2'>
             <img src={item.assetImg} className='w-10 h-10 rounded-full' />
-            <div className='font-semibold'>{item.name}</div>
+            <div className='font-semibold'>{item.assetName}</div>
           </div>,
           `$${item.tradeInfo?.floorPrice?.toFixed(2)}`, // floorPrice,
           `$${item.tradeInfo.volume24?.toFixed(2)}`,

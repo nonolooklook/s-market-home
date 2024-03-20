@@ -1,20 +1,20 @@
 import { useRequestMatchOrder } from '@/lib/hooks/useRequestMatchOrder'
-import { useTokenBalance } from '@/lib/hooks/useTokenBalance'
-import { fillOrders, useCreateOrder } from '@/lib/market'
+import { createOrder, useClients } from '@/lib/market'
 import { getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn, fmtBn, handleError, parseBn, sleep, toJson } from '@/lib/utils'
+import { displayBn, fmtBn, handleError, parseBn, sleep } from '@/lib/utils'
 import { useEffect, useState } from 'react'
-import { toast } from 'sonner'
 import { useAccount } from 'wagmi'
 import { AuthBalanceFee } from '../AuthBalanceFee'
 import { BetaD3Chart } from '../BetaD3Chart'
 import { InputQuantityValue } from '../InputQuantity'
 import { MinMax } from '../MinMax'
+import { useTpBalance } from '../TpBalance'
 import { TradePairPrice } from '../TradePairPrice'
 import { TxStatus, useTxStatus } from '../TxStatus'
-import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
+import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
+import { fillOrders } from '@/lib/api'
 
 export function BuyForList({
   open,
@@ -34,13 +34,14 @@ export function BuyForList({
   const mid = getOrderEPbigint(order.detail, tp)
   useEffect(() => setAmount(maxAmount), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
-  const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus(() => fillSellOrder())
-  const collateralBalance = useTokenBalance({ address, token: tp.token })
+  const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus({
+    onRetry: () => fillSellOrder(),
+    onBack: () => onOpenChange?.(false),
+  })
+  const { data: [, balance] = [0n, 0n] } = useTpBalance(tp, true)
   const canBuy =
-    amountBn > 0n &&
-    collateralBalance >= (parseBn(amount) * parseBn(order.max_price)) / 10n ** 18n &&
-    amountBn <= maxAmountBn
-  const create = useCreateOrder()
+    amountBn > 0n && balance >= (parseBn(amount) * parseBn(order.max_price)) / 10n ** 18n && amountBn <= maxAmountBn
+  const clients = useClients()
   const fillSellOrder = async () => {
     try {
       if (!address) return
@@ -54,7 +55,9 @@ export function BuyForList({
       const startOfferAmount = (startAmount * amountBn) / count
       const endOfferAmount = (endAmount * amountBn) / count
       // console.info('amount:', startAmount, endAmount, startOfferAmount, endOfferAmount)
-      const createdOrder = await create(
+      const createdOrder = await createOrder(
+        clients,
+        address,
         [
           {
             itemType: ItemType.ERC20.valueOf(),
@@ -121,7 +124,7 @@ export function BuyForList({
             setAmount={setAmount}
             value={`${displayBn((parseBn(amount as `${number}`) * max) / 10n ** 18n)} ${tp.tokenSymbol}`}
           />
-          <AuthBalanceFee token={tp.token} auth={(parseBn(amount as `${number}`) * max) / 10n ** 18n} balance />
+          <AuthBalanceFee auth={(parseBn(amount as `${number}`) * max) / 10n ** 18n} balance={balance} />
           <div className='flex justify-center my-2'>
             <Button onClick={fillSellOrder} disabled={!canBuy}>
               Buy

@@ -97,4 +97,5 @@ export {
 export type DialogBaseProps = {
   open?: boolean
   onOpenChange?(open: boolean): void
+  onSuccess?(): void
 }

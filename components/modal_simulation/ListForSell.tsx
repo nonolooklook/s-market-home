@@ -1,10 +1,9 @@
 import { BetaD3Chart } from '@/components/BetaD3Chart'
 import { Spinner } from '@/components/Spinner'
-import { postOrder } from '@/lib/api'
 import { FEE_ADDRESS } from '@/lib/config'
-import { createOrder, useClients } from '@/lib/market'
+import { createOrder } from '@/lib/market_simulation'
 import { ItemType, TradePair, assetTypeToItemType } from '@/lib/types'
-import { displayBn, handleError, parseBn } from '@/lib/utils'
+import { handleError, parseBn } from '@/lib/utils'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import AssetInput from '../AssetInput'
@@ -13,6 +12,8 @@ import { MinMax } from '../MinMax'
 import { useTpBalance } from '../TpBalance'
 import { Button } from '../ui/button'
 import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
+import { postOrder } from '@/lib/api_simulation'
+import { useClients } from '@/lib/market'
 
 export const ListForSale = ({ open, onOpenChange, tp }: DialogBaseProps & { tp: TradePair }) => {
   const isErc20 = tp.assetType === 'ERC20'
@@ -21,9 +22,8 @@ export const ListForSale = ({ open, onOpenChange, tp }: DialogBaseProps & { tp: 
   const [[min, max], setMinMax] = useState<[`${number}`, `${number}`]>(['8', '10'])
   const [loading, setLoading] = useState(false)
   const [amount, setAmount] = useState('1')
-  const { data: [balance] = [0n, 0n] } = useTpBalance(tp, false)
+  const { data: [balance] = [0n, 0n] } = useTpBalance(tp, true)
   const enabled = parseBn(amount, asseetDecimals) <= balance
-  console.info('balance:', displayBn(balance))
   const clients = useClients()
   const onClick = async () => {
     if (!address) return
@@ -85,12 +85,7 @@ export const ListForSale = ({ open, onOpenChange, tp }: DialogBaseProps & { tp: 
           showType='right'
         />
         <MinMax min={min} max={max} onChange={(min, max) => setMinMax([min, max])} />
-        <AssetInput
-          isErc20={isErc20}
-          amount={amount}
-          setAmount={setAmount}
-          max={balance}
-        />
+        <AssetInput isErc20={isErc20} amount={amount} setAmount={setAmount} max={balance} />
         <AuthBalanceFee fee />
         <div className='flex justify-center my-4'>
           <Button disabled={loading || !enabled} onClick={onClick}>

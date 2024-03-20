@@ -1,7 +1,5 @@
-import { fillOrders } from '@/lib/api'
 import { FEE_ADDRESS } from '@/lib/config'
-import { useRequestMatchOrder } from '@/lib/hooks/useRequestMatchOrder'
-import { createOrder, useClients } from '@/lib/market'
+import { createOrder } from '@/lib/market_simulation'
 import { getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '@/lib/types'
 import { displayBn, fmtBn, handleError, parseBn, sleep } from '@/lib/utils'
@@ -16,12 +14,15 @@ import { TradePairPrice } from '../TradePairPrice'
 import { TxStatus, useTxStatus } from '../TxStatus'
 import { Button } from '../ui/button'
 import { Dialog, DialogBaseProps, DialogContent, DialogTitle } from '../ui/dialog'
+import { fillOrders } from '@/lib/api_simulation'
+import { useClients } from '@/lib/market'
 
 export function SellForBid({
   open,
   onOpenChange,
   tp,
   order,
+  onSuccess,
 }: DialogBaseProps & { tp: TradePair; order: OrderWrapper }) {
   const { address } = useAccount()
   const isErc20 = tp.assetType === 'ERC20'
@@ -33,12 +34,13 @@ export function SellForBid({
   const [min, max] = getOrderPerMinMaxBigint(order.detail, tp)
   const mid = getOrderEPbigint(order.detail, tp)
   useEffect(() => setAmount(maxAmount), [maxAmount])
-  const reqMatchOrder = useRequestMatchOrder()
+
   const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus({
     onRetry: () => fillSellOrder(),
     onBack: () => onOpenChange?.(false),
+    isSimulation: true,
   })
-  const { data: [balance] = [0n, 0n] } = useTpBalance(tp, false)
+  const { data: [balance] = [0n, 0n] } = useTpBalance(tp, true)
   const canSell = amountBn > 0n && amountBn <= maxAmountBn && balance >= amountBn
   const clients = useClients()
   const fillSellOrder = async () => {
@@ -52,7 +54,7 @@ export function SellForBid({
       const startAmount = (offer.reduce((amount: bigint, cv) => BigInt(cv.startAmount) + amount, 0n) * amountBn) / count
       const endAmount = (offer.reduce((amount: bigint, cv) => BigInt(cv.endAmount) + amount, 0n) * amountBn) / count
 
-      const createdOrder = await createOrder(
+      const takerOrder = await createOrder(
         clients,
         address,
         [
@@ -103,13 +105,13 @@ export function SellForBid({
       ]
       await sleep(2000)
       const res = await fillOrders(tp, {
-        takerOrders: [createdOrder.order as any],
+        takerOrders: [takerOrder.order as any],
         makerOrders: [order.detail],
         modeOrderFulfillments: modeOrderFulfillments,
       })
       // do request match order;
-      await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
+      const success = await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
+      success && onSuccess && onSuccess()
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)

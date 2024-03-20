@@ -37,8 +37,11 @@ export function Header() {
   const isMd = useMediaQuery('(min-width: 768px)')
   return (
     <header
+      style={{
+        boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.05)'
+      }}
       className={cn(
-        'flex sticky top-0 w-[calc(100%-2rem)] md:w-[calc(100%-5.5rem)] items-center justify-between mx-4 md:mx-11 my-2 md:my-5 px-2 md:px-5 bg-white border border-gray-100 rounded-lg h-16 z-50',
+        'flex sticky top-0 w-[calc(100%-2rem)] md:w-[calc(100%-5.5rem)] items-center justify-between mx-4 md:mx-11 my-2 md:my-5 px-2 md:px-5 py-3 bg-white border border-gray-100 rounded-lg z-50',
       )}
     >
       <div className='flex items-center gap-2 md:gap-8'>

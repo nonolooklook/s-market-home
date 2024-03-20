@@ -214,21 +214,21 @@ export type StepType = {
 export type TxStatusProps = {
   type: 'loading' | 'fail' | 'step'
   step?: StepType | StepType[]
-  onClose?: () => void
+  onClose?: (back: boolean) => void
   onRetry?: () => void
 }
 
 export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
   const steps = Array.isArray(step) ? step : step ? [step] : []
   const canClose = type == 'fail' || (type == 'step' && steps && steps[0]?.step == 2)
-  const wrapClose = () => {
-    canClose && onClose && onClose()
+  const wrapClose = (back: boolean) => {
+    canClose && onClose && onClose(back)
   }
   const r = useRouter()
   const pathname = usePathname()
 
   return (
-    <Dialog open={true} onOpenChange={() => wrapClose()}>
+    <Dialog open={true} onOpenChange={() => wrapClose(false)}>
       <DialogContent className='max-w-[450px]' onPointerDownOutside={(e) => e.preventDefault()}>
         <div className='py-0 ' />
         {type == 'loading' && (
@@ -310,7 +310,8 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
                       <Button
                         onClick={() => {
                           if (pathname.startsWith('/trade')) {
-                            window.location.reload()
+                            // window.location.reload()
+                            wrapClose(true)
                           } else {
                             r.push('/trade')
                           }
@@ -329,7 +330,15 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
   )
 }
 
-export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
+export function useTxStatus({
+  onRetry,
+  onBack,
+  isSimulation,
+}: {
+  onRetry?: TxStatusProps['onRetry']
+  onBack?: () => void
+  isSimulation?: boolean
+}) {
   const safeRef = useSafe()
   const [typestep, setTypeStep] = useState<Pick<TxStatusProps, 'type' | 'step'>>({ type: 'loading' })
   const [open, setOpen] = useState(false)
@@ -346,16 +355,21 @@ export function useTxStatus(onRetry?: TxStatusProps['onRetry']) {
     return {
       type: typestep.type,
       step: typestep.step,
-      onClose: () => setTxsOpen(false),
+      onClose: (back) => {
+        back && onBack && onBack()
+        setTxsOpen(false)
+      },
       onRetry,
     }
-  }, [typestep, setTxsOpen, onRetry])
+  }, [typestep, setTxsOpen, onRetry, onBack])
 
   const intevalCheckStatus = async (reqId: string, [min, max]: [string, string]) => {
     setTypeStep({ type: 'step', step: { step: 0, min, max } })
     while (true) {
       await sleep(5000)
-      const r2 = await apiGet<TxTaskStatus>(`/common/order/task/${reqId}/detail`).catch(() => null)
+      const r2 = await apiGet<TxTaskStatus>(
+        isSimulation ? `/mock/task/${reqId}/detail` : `/common/order/task/${reqId}/detail`,
+      ).catch(() => null)
       if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
         safeRef.current && setTypeStep({ type: 'step', step: { step: 1, min, max } })
       }

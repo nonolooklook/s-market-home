@@ -1,8 +1,9 @@
-import { QueryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { QueryOptions, useQuery } from '@tanstack/react-query'
 import { BASE_URL } from './config'
 import { MatchOrdersFulfillment, Order, OrderWrapper, TpOrderDistribution, TradePair, TradePairDetails } from './types'
 import { toJson } from './utils'
-import { CreatedOrder } from './market'
+import { CreatedOrder } from './market_simulation'
+import { Address } from 'viem'
 
 function createUrl(path: `/${string}`) {
   return `${BASE_URL}${path}`
@@ -27,13 +28,6 @@ export async function apiPost<T>(path: `/${string}`, body: any) {
   }).then(fetchCovert<T>)
 }
 
-export function useApiPost<T>(path: `/${string}`, body?: any) {
-  return useMutation<T>({
-    mutationKey: [path, body],
-    mutationFn: () => apiPost<T>(path, body),
-  })
-}
-
 export function useApiGet<TData>(path: `/${string}`, options?: QueryOptions<TData>) {
   const url = createUrl(path)
   return useQuery<TData>({
@@ -47,7 +41,7 @@ export function useApiGet<TData>(path: `/${string}`, options?: QueryOptions<TDat
 
 export async function postOrder(tp: TradePair, order: CreatedOrder) {
   if (!order) throw 'Order is empty'
-  await apiPost(`/common/order/tradingPair/${tp.id}/create`, {
+  await apiPost(`/mock/tradingPair/${tp.id}/create`, {
     hash: order.orderHash,
     entry: order.order,
   })
@@ -61,23 +55,35 @@ export async function fillOrders(
     modeOrderFulfillments: MatchOrdersFulfillment[]
   },
 ) {
-  const res = await apiPost<{ hash: string }>(`/common/order/tradingPair/${tp.id}/fillOrder`, data)
+  const res = await apiPost<{ hash: string }>(`/mock/tradingPair/${tp.id}/fillOrder`, data)
   if (!res?.hash) throw 'Fill order error'
   return res
 }
 
 export function useTradePairDetail(id: string) {
-  return useApiGet<TradePairDetails>(`/common/order/tradingPair/${id}/collection/detail`)
+  return useApiGet<TradePairDetails>(`/mock/tradingPair/${id}/collection/detail`)
 }
 
 export function useOrderList(tp: TradePair) {
   return useApiGet<OrderWrapper[]>(
-    `/common/order/list?tradingPairId=${tp.id}&nftAddress=${tp.asset}&tokenAddress=${tp.token}`,
+    `/mock/order/list?tradingPairId=${tp.id}&nftAddress=${tp.asset}&tokenAddress=${tp.token}`,
   )
 }
 
 export function useTpOrderDistribution(tp: TradePair, precision: number, pointSize: number = 25) {
   return useApiGet<TpOrderDistribution>(
-    `/common/order/tradingPair/${tp.id}/distribution?precision=${precision}&pointSize=${pointSize}`,
+    `/mock/tradingPair/${tp.id}/distribution?precision=${precision}&pointSize=${pointSize}`,
   )
+}
+
+export async function getUserBalance(address: Address) {
+  return apiGet<
+    {
+      amount: string
+      collection_address: Address
+      collection_type: number
+      id: number
+      token_id: number
+    }[]
+  >(`/mock/user/${address}/account`)
 }

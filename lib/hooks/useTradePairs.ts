@@ -28,17 +28,25 @@ export const useTradePairs = create<UseTradePairs>((set) => ({
         const details = await Promise.all(
           datas.map((tp) => apiGet<TradePairDetails>(`/common/order/tradingPair/${tp.id}/collection/detail`)),
         )
-        const pairs = datas.map<TradePair>((tp, index) => ({
-          id: tp.id.toFixed(),
-          assetType: tp.collection_type == 1 ? 'ERC1155' : tp.collection_type == 0 ? 'ERC20' : 'ERC721',
-          assetId: BigInt(tp.token_id),
-          assetImg: details?.[index]?.collectionDetail?.base_info?.imageUrl || details?.[index]?.collectionDetail?.base_info?.image_url,
-          name: details?.[index]?.collectionDetail?.name || '-',
-          asset: tp.collection_address,
-          token: tp.token_address,
-          tokenSymbol: details?.[index]?.tokenDetail?.name || '-',
-          tradeInfo: details?.[index]?.collectionDetail?.trading_info,
-        }))
+        const pairs = datas.map<TradePair>((tp, index) => {
+          const assetType = tp.collection_type == 1 ? 'ERC1155' : tp.collection_type == 0 ? 'ERC20' : 'ERC721'
+          const assetId = tp.token_id ? BigInt(tp.token_id) : undefined
+          const assetImg = details?.[index]?.collectionDetail?.base_info?.imageUrl || details?.[index]?.collectionDetail?.base_info?.image_url
+          const name = details?.[index]?.collectionDetail?.name || details?.[index]?.collectionDetail?.base_info?.name || ''
+          const assetName = assetType == 'ERC1155' ? `${name} #${assetId}` : name
+          return {
+            id: tp.id.toFixed(),
+            assetType,
+            assetId,
+            assetImg,
+            name,
+            assetName,
+            asset: tp.collection_address,
+            token: tp.token_address,
+            tokenSymbol: details?.[index]?.tokenDetail?.name || '-',
+            tradeInfo: details?.[index]?.collectionDetail?.trading_info,
+          }
+        })
         set({ pairs })
         await new Promise((resolve) => setTimeout(resolve as any, 60 * 60 * 1000))
       } catch (error) {

@@ -29,6 +29,7 @@ export type TradePair = {
   assetImg?: string
   assetId?: bigint
   name: string
+  assetName: string
   token: Address
   tokenSymbol: string
   tradeInfo: TradePairDetails['collectionDetail']['trading_info']
