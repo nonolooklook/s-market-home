@@ -79,7 +79,7 @@ export type OrderWrapper = {
   offerer: Address
   order_end_time: number
   order_hash: Address
-  order_item_size: number
+  order_item_size: string
   order_start_time: number
   order_state: number
   order_type: number

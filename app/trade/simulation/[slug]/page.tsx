@@ -275,9 +275,9 @@ function TpTrade({ tp }: { tp: TradePair }) {
         <TpBalance tp={tp} isSimulation ref={tpBalanceRef} />
         <Button onClick={() => r.push(`/trade/${tp.id}`)}>Real</Button>
         <RequestCoins tp={tp} onSuccess={() => tpBalanceRef.current?.()} />
-        <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>
+        {/* <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>
           History
-        </Button>
+        </Button> */}
       </div>
       <div className='grid md:grid-cols-2 gap-5'>
         <div className=''>

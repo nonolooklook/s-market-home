@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { ChainIcon, ConnectKitButton } from 'connectkit'
 import { usePathname, useRouter } from 'next/navigation'
 import { useMemo } from 'react'
-import { FiMenu } from "react-icons/fi"
+import { FiMenu } from 'react-icons/fi'
 import { useMediaQuery } from 'usehooks-ts'
 import { Address, useAccount, useNetwork } from 'wagmi'
 import { Button } from './ui/button'
@@ -28,7 +28,8 @@ export function Header() {
   const chainName = chains.find((c) => c.id === chain?.id)?.name
   const { address } = useAccount()
   const mLinks = useMemo(
-    () => (isAdmin(address) ? links.concat([{ href: '/admin', label: 'Admin' }]) : links),
+    () =>
+      (isAdmin(address) ? links.concat([{ href: '/admin', label: 'Admin' }]) : links),
     [address],
   )
   memoAccount.current = address as any
@@ -36,7 +37,7 @@ export function Header() {
   return (
     <header
       style={{
-        boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.05)'
+        boxShadow: '0px 0px 10px rgba(0, 0, 0, 0.05)',
       }}
       className={cn(
         'flex sticky top-0 w-[calc(100%-2rem)] md:w-[calc(100%-5.5rem)] items-center justify-between mx-4 md:mx-11 my-2 md:my-5 px-2 md:px-5 py-3 bg-white border border-gray-100 rounded-lg z-50',

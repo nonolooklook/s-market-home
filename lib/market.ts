@@ -4,11 +4,7 @@ import { usePublicClient, useWalletClient } from 'wagmi'
 import { MarketABI } from './abi/MarketAbi'
 import { getCurrentMarketAddress } from './config'
 import { approveOffer } from './nft'
-import {
-  Clients,
-  ConsiderationItem,
-  OfferItem
-} from './types'
+import { Clients, ConsiderationItem, OfferItem, Order, OrderParameters } from './types'
 import { parseBn } from './utils'
 
 const ZeroHash: Address = '0x0000000000000000000000000000000000000000000000000000000000000000'
@@ -21,6 +17,28 @@ export function useClients(): Clients {
     wc: wc.data,
     pc: pc,
   }
+}
+
+export function covert2OrderComponents(parameters: OrderParameters, counter: bigint) {
+  return {
+    ...parameters,
+    offer: parameters.offer.map((o: OfferItem) => ({
+      ...o,
+      identifierOrCriteria: BigInt(o.identifierOrCriteria),
+      startAmount: BigInt(o.startAmount),
+      endAmount: BigInt(o.endAmount),
+    })),
+    consideration: parameters.consideration.map((o: ConsiderationItem) => ({
+      ...o,
+      identifierOrCriteria: BigInt(o.identifierOrCriteria),
+      startAmount: BigInt(o.startAmount),
+      endAmount: BigInt(o.endAmount),
+    })),
+    salt: parameters.salt as unknown as bigint,
+    startTime: BigInt(parameters.startTime),
+    endTime: BigInt(parameters.endTime),
+    counter: BigInt(counter),
+  } as const
 }
 
 export async function createOrder(
@@ -157,7 +175,6 @@ export async function createOrder(
     orderComponents,
   }
 }
-
 
 type UnPromise<T> = T extends Promise<infer U> ? U : never
 

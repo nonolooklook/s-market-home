@@ -3,6 +3,7 @@ import { BASE_URL } from './config'
 import { MatchOrdersFulfillment, Order, OrderWrapper, TpOrderDistribution, TradePair, TradePairDetails } from './types'
 import { toJson } from './utils'
 import { CreatedOrder } from './market'
+import { Address } from 'viem'
 
 function createUrl(path: `/${string}`) {
   return `${BASE_URL}${path}`
@@ -64,6 +65,18 @@ export async function fillOrders(
   const res = await apiPost<{ hash: string }>(`/common/order/tradingPair/${tp.id}/fillOrder`, data)
   if (!res?.hash) throw 'Fill order error'
   return res
+}
+
+export async function getOrderList(params: {
+  tradingPairId?: string | number
+  offerer?: string | Address
+  nftAddress: string
+  tokenAddress: string
+}) {
+  const querys = Object.keys(params)
+    .map((key) => ((params as any)[key] != undefined ? `${key}=${(params as any)[key]}` : ''))
+    .join('&')
+  return await apiGet<OrderWrapper[]>(`/common/order/list?${querys}`)
 }
 
 export function useTradePairDetail(id: string) {
