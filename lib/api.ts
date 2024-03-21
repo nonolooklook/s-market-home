@@ -79,6 +79,10 @@ export async function getOrderList(params: {
   return await apiGet<OrderWrapper[]>(`/common/order/list?${querys}`)
 }
 
+export async function getTradeHistory(address: string) {
+  return await apiGet<any[]>(`/common/order/user/${address}/history`)
+}
+
 export function useTradePairDetail(id: string) {
   return useApiGet<TradePairDetails>(`/common/order/tradingPair/${id}/collection/detail`)
 }

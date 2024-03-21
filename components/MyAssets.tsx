@@ -1,21 +1,22 @@
 import { MarketABI } from '@/lib/abi/MarketAbi'
-import { getOrderList } from '@/lib/api'
+import { getOrderList, getTradeHistory } from '@/lib/api'
 import { MarketAddress, getCurrentExploerUrl } from '@/lib/config'
 import { useTradePairs } from '@/lib/hooks/useTradePairs'
 import { covert2OrderComponents } from '@/lib/market'
 import { erc1155ABI } from '@/lib/nft'
 import { getOrderEP, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
-import { OrderWrapper, TradePair } from '@/lib/types'
+import { Order, OrderWrapper, TradePair } from '@/lib/types'
 import { cn, displayBn, fmtBn, handleError, parseBn, shortStr, toJson } from '@/lib/utils'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { utcFormat } from 'd3'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 import { erc721ABI, useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import GridTable from './GridTable'
 import { Spinner } from './Spinner'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
-import { useEffect, useState } from 'react'
-import { utcFormat } from 'd3'
+import STable from './SimpleTable'
 
 type GeneralProps = {
   tps: TradePair[]
@@ -136,8 +137,8 @@ function Listed(p: GeneralProps & { bid?: boolean }) {
 }
 
 const getRole = (item: any, account: string) => {
-  const isMaker = item.makerOffer == account
-  const isTaker = item.takerOffer == account
+  const isMaker = item.task_detail?.makerOrders[0]?.parameters.offerer == account
+  const isTaker = item.task_detail?.takerOrders[0]?.parameters.offerer == account
   if (isMaker && !isTaker) return 'Maker'
   if (isTaker && !isMaker) return 'Taker'
   return '-'
@@ -145,67 +146,105 @@ const getRole = (item: any, account: string) => {
 
 const getSide = (item: any, role: string) => {
   if (role == '-') return '-'
-  const type = item?.fillOrderDetail?.takerOrders[0]?.parameters.offer[0]?.itemType
+  const type = item?.task_detail?.takerOrders[0]?.parameters.offer[0]?.itemType
   const takerOfferIsUsdc = type === 1
   return role == 'Taker' ? (takerOfferIsUsdc ? 'Buy' : 'Sale') : takerOfferIsUsdc ? 'Sale' : 'Buy'
 }
 
 const getDate = (item: any) => {
-  const takerOrder = item?.fillOrderDetail?.takerOrders[0]
-  const time = Number(takerOrder.parameters.startTime) * 1000
+  const time = Number(item.match_timestamp) * 1000
   return utcFormat('%Y-%m-%d %H:%M:%S')(new Date(time))
 }
 
 function TradeHistory() {
   const { address } = useAccount()
-  const history: any[] = []
+  const { pairs } = useTradePairs()
+  const tpMap = useMemo(() => {
+    const map: { [k: number | string]: TradePair } = {}
+    pairs.forEach((tp) => {
+      map[`${tp.asset.toLowerCase()}_${tp.assetId?.toString()}_${tp.tokenSymbol.toLowerCase()}`] = tp
+    })
+    return map
+  }, [pairs])
+  const { data = [] } = useQuery({
+    queryKey: ['trade-history', address],
+    queryFn: async () => {
+      if (!address) return []
+      return getTradeHistory(address)
+    },
+  })
+  const history = pairs.length && address ? data : []
   return (
     <div>
       <div className='flex flex-wrap items-center gap-2'></div>
-      <GridTable
-        header={['Order number', 'Date', 'Pair', 'Side', 'Price', 'Executed', 'Role', 'Min Price/Max Price', 'Fee', 'Total', 'Txn hash']}
-        data={history.map((item: any) => {
-          const makerOrder = item?.fillOrderDetail?.makerOrders[0]
-          const count = Number(makerOrder.numerator)
-          const role = getRole(item, address as any)
-          const side = getSide(item, role)
-          const [min, max] = getOrderPerMinMaxBigint(makerOrder as any, item as any)
-          const txLink = getCurrentExploerUrl() + '/tx/' + item.txHash
-          const fee = (Number(item.transaction[0].price) * 0.005 * count).toFixed(2)
-          const executedPrice = Number(item.transaction[0].price).toFixed(2)
-          const total = (Number(item.transaction[0].price) * count).toFixed(2)
-          const tokenSymbol = 'USDC'
-          return [
-            shortStr(item._id), // Order number
-            getDate(item), // Date
-            `TimeCapsule/${tokenSymbol}`, // Pair
-            <span
-              key='side'
-              className={cn({
-                'text-green-400': side == 'Buy',
-                'text-red-400': side == 'Sale',
-                'text-white': side == '-',
-              })}
-            >
-              {side}
-            </span>, // Side
-            `${getOrderEP(makerOrder as any, item)} ${tokenSymbol}`, // Price
-            `${executedPrice} ${tokenSymbol}`, // Executed
-            role, // Role
-            <div className='text-right' key='minmax'>
-              <div>{displayBn(min)}</div>
-              <div>{displayBn(max)}</div>
-            </div>, // Min Price/Max Price;
-            `${fee} ${tokenSymbol}`, // Fee
-            `${total} ${tokenSymbol}`, // Total
-            <div className='flex items-center gap-2' key='txhash'>
-              <a href={txLink} target='_blank' rel='noreferrer' className='text-yellow-400'>
-                {shortStr(item.txHash, 8, 6)}
-              </a>
-            </div>,
-          ]
-        })}
-      />
+      <div className='overflow-x-auto pb-5'>
+        <STable
+          className='min-w-[1500px]'
+          span={{ 1: 2, 2: 2, 7: 2, 11: 2 }}
+          header={['Order number', 'Date', 'Pair', 'Side', 'Price', 'Executed', 'Role', 'Min Price/Max Price', 'Fee', 'Total', 'Txn hash']}
+          data={history.map((item: any) => {
+            /*
+collection_address: "0x0DbC6f35a8391Fafd02E99e76336dB0fC072Ca6D"
+collection_name: "Azuki"
+collection_type: 1
+id: 7
+match_timestamp: 1706602602
+match_tx_hash: "0x807b6e5e5e2e2f57350744818c5f6aa7c699cda9590c03d0c09aee99b9a135e0"
+max_price: "10.0000000000"
+min_price: "8.0000000000"
+order_detail: {extraData: "0x", numerator: 1,…}
+price: "8.6504000000"
+task_detail: {makerOrders: [{extraData: "0x", numerator: 1,…}, {extraData: "0x", numerator: 1,…},…],…}
+task_hash: "T8035ce1b-789f-4b3f-8845-e2bcca48c875-1706602585"
+token_id: 1
+token_name: "USDC"
+          */
+            const makerOrder = item?.task_detail?.makerOrders[0]
+            const count = Number(makerOrder.numerator)
+            const role = getRole(item, address as any)
+            const side = getSide(item, role)
+            const key = `${item.collection_address.toLowerCase()}_${item.token_id}_${item.token_name.toLowerCase()}`
+            const tp = tpMap[key]
+            const [min, max] = getOrderPerMinMaxBigint(makerOrder, tpMap[key])
+            const txLink = getCurrentExploerUrl() + '/tx/' + item.match_tx_hash
+            const fee = (Number(item.price) * 0.005 * count).toFixed(2)
+            const executedPrice = Number(item.price).toFixed(2)
+            const total = (Number(item.price) * count).toFixed(2)
+            const tokenSymbol = item.token_name
+
+            return [
+              shortStr(item.id + ''), // Order number
+              getDate(item), // Date
+              `${tp.assetName}/${tokenSymbol}`, // Pair
+              <span
+                key='side'
+                className={cn({
+                  'text-green-400': side == 'Buy',
+                  'text-red-400': side == 'Sale',
+                })}
+              >
+                {side}
+              </span>, // Side
+              `${getOrderEP(makerOrder as any, tp)} ${tokenSymbol}`, // Price
+              `${executedPrice} ${tokenSymbol}`, // Executed
+              role, // Role
+              <div key='minmax'>
+                <div>
+                  {displayBn(min)} {tokenSymbol}
+                </div>
+                <div>
+                  {displayBn(max)} {tokenSymbol}
+                </div>
+              </div>, // Min Price/Max Price;
+              `${fee} ${tokenSymbol}`, // Fee
+              `${total} ${tokenSymbol}`, // Total
+              <a href={txLink} target='_blank' rel='noreferrer' className='text-blue-300'>
+                {shortStr(item.match_tx_hash, 8, 6)}
+              </a>,
+            ]
+          })}
+        />
+      </div>
     </div>
   )
 }
