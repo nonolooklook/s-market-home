@@ -354,7 +354,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         </div>
       </div>
       <div className='py-4 mb-6'>
-        <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} />
+        <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} isSimulation />
       </div>
       {openList && <ListForSale open={true} onOpenChange={() => (refetchOrderList(), setOpenList(false))} tp={tp} />}
       {openPlaceBid && (

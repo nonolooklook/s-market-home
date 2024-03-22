@@ -3,6 +3,7 @@ import { CrossCircledIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 import { Button } from './ui/button'
 import { useTpOrderDistribution } from '@/lib/api'
+import { useTpOrderDistribution as useTpOrderDistributionSim } from '@/lib/api_simulation'
 const precisions = [0.01, 0.1, 1, 10, 50, 100]
 const pointCount = 20
 
@@ -12,14 +13,16 @@ export const PriceChart = ({
   selectedPrice,
   setSelectedIsBid,
   setSelectedPrice,
+  isSimulation,
 }: {
   tp: TradePair
   selectedPrice?: number
   setSelectedIsBid?: (isBid: boolean) => void
   setSelectedPrice?: (price: number) => void
+  isSimulation?: boolean
 }) => {
   const [precision, setPrecision] = useState(0.1)
-  const { data: tpDisData } = useTpOrderDistribution(tp, precision, pointCount)
+  const { data: tpDisData } = (isSimulation ? useTpOrderDistributionSim : useTpOrderDistribution)(tp, precision, pointCount)
 
   const lists = tpDisData?.listExpectationList || empty
   const bids = tpDisData?.bidExpectationList || empty
