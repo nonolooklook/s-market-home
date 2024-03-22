@@ -129,7 +129,7 @@ function Listed(p: GeneralProps & { bid?: boolean }) {
           `${min} ${tp.tokenSymbol}`,
           `${ep} ${tp.tokenSymbol}`,
           `${max} ${tp.tokenSymbol}`,
-          <OrderCancel order={order} onSuccess={refetch} />,
+          <OrderCancel order={order} onSuccess={refetch} key={'key'} />,
         ]
       })}
     />
@@ -238,7 +238,7 @@ token_name: "USDC"
               </div>, // Min Price/Max Price;
               `${fee} ${tokenSymbol}`, // Fee
               `${total} ${tokenSymbol}`, // Total
-              <a href={txLink} target='_blank' rel='noreferrer' className='text-blue-300'>
+              <a href={txLink} target='_blank' key={'link'} rel='noreferrer' className='text-blue-300'>
                 {shortStr(item.match_tx_hash, 8, 6)}
               </a>,
             ]
