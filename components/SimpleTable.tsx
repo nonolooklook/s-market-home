@@ -43,21 +43,15 @@ export const STable = ({
 }: TableProps) => {
   return (
     <table className={className}>
-      <thead className='table table-fixed w-full'>
-        <tr
-          className={cn(
-            'text-left table table-fixed w-full font-normal text-black border-b border-gray-100 pt-5 pb-6',
-            headerClassName,
-          )}
-        >
+      <thead className=''>
+        <tr className={cn('text-left whitespace-nowrap font-normal text-black border-b border-gray-100 pt-5 pb-6', headerClassName)}>
           {header.map((head, i) => {
-            const itemSpan = span[i] != undefined ? span[i] : 1
             return (
               <th
                 key={i}
-                colSpan={itemSpan}
+                colSpan={span[i]}
                 scope='col'
-                className={cn(itemSpan == 0 ? 'p-0 w-0' : 'p-3 font-normal text-sm', headerItemClassName)}
+                className={cn(span[i] == 0 ? 'p-0 w-0' : 'p-3 font-normal text-sm', headerItemClassName)}
               >
                 {head}
               </th>
@@ -74,20 +68,19 @@ export const STable = ({
             onMouseLeave={() => onRowMouseHover && onRowMouseHover(-1)}
             style={typeof rowStyle == 'function' ? rowStyle(index) : rowStyle}
             className={cn(
-              'text-black table table-fixed w-full font-medium whitespace-nowrap',
+              'text-black font-medium whitespace-nowrap',
               onClickRow ? 'cursor-pointer hover:bg-slate-400/10' : '',
               typeof rowClassName == 'function' ? rowClassName(index) : rowClassName,
             )}
           >
             {items.map((value, i) => {
-              const itemSpan = span[i] != undefined ? span[i] : 1
               if (i >= header.length) return <>{value}</>
               return (
                 <td
                   key={i}
-                  colSpan={itemSpan}
+                  colSpan={span[i]}
                   className={cn(
-                    itemSpan == 0 ? 'p-0 w-0' : 'px-3 py-2 text-base',
+                    span[i] == 0 ? 'p-0 w-max' : 'px-3 py-2 text-base w-max',
                     typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
                   )}
                 >

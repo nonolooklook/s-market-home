@@ -34,7 +34,7 @@ export const GridTable = ({
   data,
   span = {},
   empty = <DefEmpty />,
-  className = 'relative min-w-full bg-transparent ',
+  className = 'relative bg-transparent overflow-x-auto whitespace-nowrap',
   headerClassName,
   headerItemClassName,
   tbodyClassName = '',
@@ -53,60 +53,56 @@ export const GridTable = ({
 
   return (
     <div className={className}>
-      <div
-        style={{ gridTemplateColumns }}
-        className={cn(
-          'grid text-left w-full font-normal text-black border-b border-gray-100 pt-5 pb-6',
-          headerClassName,
-        )}
-      >
-        {header.map((head, i) => (
-          <div key={keyS + '_header_' + i} className={cn('p-3 font-normal text-sm', headerItemClassName)}>
-            {head}
-          </div>
-        ))}
-      </div>
-      <div className={cn(tbodyClassName)}>
-        {data.map((items, index) => (
-          <div
-            key={keyS + '_item_' + index}
-            onClick={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-              onClickRow && onClickRow(index)
-            }}
-            onMouseEnter={() => {
-              onRowMouseHover && onRowMouseHover(index)
-            }}
-            onMouseLeave={() => {
-              onRowMouseHover && onRowMouseHover(-1)
-            }}
-            style={{
-              gridTemplateColumns,
-              ...(typeof rowStyle == 'function' ? rowStyle(index) : rowStyle),
-            }}
-            className={cn(
-              'grid text-black w-full font-medium whitespace-nowrap',
-              typeof rowClassName == 'function' ? rowClassName(index) : rowClassName,
-            )}
-          >
-            {items.map((value, i) => {
-              if (i >= header.length) return <>{value}</>
-              return (
-                <div
-                  key={`${keyS}_cell_${i}`}
-                  className={cn(
-                    'px-3 py-2 text-base',
-                    typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName,
-                  )}
-                >
-                  {value}
-                </div>
-              )
-            })}
-          </div>
-        ))}
-        {data.length === 0 && empty}
+      <div className='w-max min-w-full'>
+        <div
+          style={{ gridTemplateColumns }}
+          className={cn('grid text-left w-full font-normal text-black border-b border-gray-100 pt-5 pb-6', headerClassName)}
+        >
+          {header.map((head, i) => (
+            <div key={keyS + '_header_' + i} className={cn('p-3 font-normal text-sm', headerItemClassName)}>
+              {head}
+            </div>
+          ))}
+        </div>
+        <div className={cn(tbodyClassName)}>
+          {data.map((items, index) => (
+            <div
+              key={keyS + '_item_' + index}
+              onClick={(e) => {
+                e.stopPropagation()
+                e.preventDefault()
+                onClickRow && onClickRow(index)
+              }}
+              onMouseEnter={() => {
+                onRowMouseHover && onRowMouseHover(index)
+              }}
+              onMouseLeave={() => {
+                onRowMouseHover && onRowMouseHover(-1)
+              }}
+              style={{
+                gridTemplateColumns,
+                ...(typeof rowStyle == 'function' ? rowStyle(index) : rowStyle),
+              }}
+              className={cn(
+                'grid text-black w-full font-medium whitespace-nowrap',
+                typeof rowClassName == 'function' ? rowClassName(index) : rowClassName,
+              )}
+            >
+              {items.map((value, i) => {
+                if (i >= header.length) return <>{value}</>
+                return (
+                  <div
+                    key={`${keyS}_cell_${i}`}
+                    className={cn('px-3 py-2 text-base', typeof cellClassName == 'function' ? cellClassName(index, i) : cellClassName)}
+                  >
+                    {value}
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+          {data.length === 0 && empty}
+        </div>
       </div>
     </div>
   )

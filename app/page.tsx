@@ -35,7 +35,7 @@ export default function Home() {
           <div key={'star'} className='flex items-center'>
             <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
           </div>,
-          <div key={'project'} className='flex items-center gap-2'>
+          <div key={'project'} className='flex items-center gap-2 pr-10'>
             <img src={item.assetImg} className='w-10 h-10 rounded-full' />
             <div className='font-semibold'>{item.assetName}</div>
             {/* <div className='text-gray-400'>Bitcoin</div> */}
@@ -52,7 +52,7 @@ export default function Home() {
             <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
             {mnfts.length + 1}
           </div>,
-          <div key={'project'} className='flex items-center gap-2'>
+          <div key={'project'} className='flex items-center gap-2 pr-10'>
             <img src={item.assetImg} className='w-10 h-10 rounded-full' />
             <div className='font-semibold'>{item.assetName}</div>
           </div>,

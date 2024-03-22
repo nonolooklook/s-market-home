@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Address } from 'viem'
-import { erc20ABI, erc721ABI, useContractRead, usePublicClient, useQuery } from 'wagmi'
-import { Clients, OfferItem, TradePair } from './types'
+import { erc20ABI, erc721ABI } from 'wagmi'
+import { Clients, OfferItem } from './types'
 import { parseBn } from './utils'
 
 export const erc1155ABI = [
@@ -318,37 +317,6 @@ export const erc1155ABI = [
     type: 'function',
   },
 ] as const
-
-// export function useTradePairMeta(tp: TradePair) {
-//   const [data, setData] = useState<{
-//     name: string
-//     image: string
-//   }>()
-//   const pc = usePublicClient()
-
-//   useEffect(() => {
-//     if (tp.assetType == 'ERC1155') {
-//       pc.readContract({
-//         abi: erc1155ABI,
-//         address: tp.asset,
-//         functionName: 'uri',
-//         args: [tp.assetId as bigint],
-//       })
-//         .then((url) => {
-//           if (url) return fetch(url.replace('ipfs://', 'https://cf-ipfs.com/ipfs/')).then((res) => res.json())
-//           return Promise.resolve(null)
-//         })
-//         .then((meta) => {
-//           setData({
-//             name: meta.name,
-//             image: ((meta.image as string) || '').replace('ipfs://', 'https://cf-ipfs.com/ipfs/'),
-//           })
-//         })
-//     }
-//   }, [tp, pc])
-
-//   return { meta: data }
-// }
 
 export async function approveOffer(clients: Clients, item: OfferItem, offerer: Address, spender: Address) {
   const { wc, pc } = clients
