@@ -38,7 +38,7 @@ export function BuyForList({
     onRetry: () => fillSellOrder(),
     onBack: () => onOpenChange?.(false),
   })
-  const { data: [, balance] = [0n, 0n] } = useTpBalance(tp, true)
+  const { data: [, balance] = [0n, 0n] } = useTpBalance(tp, false)
   const canBuy =
     amountBn > 0n && balance >= (parseBn(amount) * parseBn(order.max_price)) / 10n ** 18n && amountBn <= maxAmountBn
   const clients = useClients()
