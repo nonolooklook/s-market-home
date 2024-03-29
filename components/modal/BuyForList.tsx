@@ -21,6 +21,7 @@ export function BuyForList({
   onOpenChange,
   tp,
   order,
+  onSuccess
 }: DialogBaseProps & { tp: TradePair; order: OrderWrapper }) {
   const isErc20 = tp.assetType === 'ERC20'
   const asseetDecimals = isErc20 ? 18 : 0
@@ -104,7 +105,8 @@ export function BuyForList({
       })
       // do request match order;
       await reqMatchOrder([order.order_hash, createdOrder.orderHash] as any)
-      await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
+      const success = await intevalCheckStatus(res.hash, getOrderPerMinMax(order.detail, tp))
+      success && onSuccess && onSuccess()
     } catch (e: any) {
       setTypeStep({ type: 'fail' })
       handleError(e)

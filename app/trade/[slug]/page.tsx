@@ -26,7 +26,7 @@ import { StarFilledIcon } from '@radix-ui/react-icons'
 import _ from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Fragment, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useNetwork } from 'wagmi'
 
@@ -38,6 +38,9 @@ function getPecentForOrder(o: OrderWrapper) {
 
 function TpTrade({ tp }: { tp: TradePair }) {
   const r = useRouter()
+  useEffect(() => {
+    localStorage.setItem('last-tp-id', tp.id)
+  }, [])
   const { data = [], refetch: refetchOrderList } = useOrderList(tp)
   const { data: info } = useTradePairDetail(tp.id)
   const isErc20 = tp.assetType == 'ERC20'
@@ -53,8 +56,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 ||
-            (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
           return item.detail.parameters.offer[0].token == tp.token && isFilterForPrice
         })
         .sort((a, b) => {
@@ -68,8 +70,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 ||
-            (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
           return item.detail.parameters.offer[0].token == tp.asset && isFilterForPrice
         })
         .sort((a, b) => {
@@ -129,10 +130,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           {sellOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-green-400' />
           )}
-          <RowTip
-            trigger={<div className='h-full absolute left-0 w-full' />}
-            content={<HoverModalList order={o} tp={tp} />}
-          />
+          <RowTip trigger={<div className='h-full absolute left-0 w-full' />} content={<HoverModalList order={o} tp={tp} />} />
         </Fragment>,
       ]
     })
@@ -153,10 +151,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           {buyOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-red-400' />
           )}
-          <RowTip
-            trigger={<div className='h-full absolute left-0 w-full' />}
-            content={<HoverModalList order={o} tp={tp} />}
-          />
+          <RowTip trigger={<div className='h-full absolute left-0 w-full' />} content={<HoverModalList order={o} tp={tp} />} />
         </Fragment>,
       ]
     })
@@ -213,37 +208,18 @@ function TpTrade({ tp }: { tp: TradePair }) {
       })
   }
   const assetImg = tp.assetImg
-  const assetName = tp.assetName
+  const assetName = tp.assetName || ''
   const assetTwitter = info?.collectionDetail?.base_info?.twitter_username || ''
   const assetDiscord = info?.collectionDetail?.base_info?.discord_url || ''
   const assetProject = info?.collectionDetail?.base_info?.project_url || ''
 
   return (
     <main>
-      <div className='flex items-center justify-between text-2xl font-medium'>
+      <div className='flex items-center flex-wrap justify-between text-2xl font-medium gap-4'>
         <div className='flex items-center gap-4'>
           <img className='w-20 h-20 rounded-full bg-amber-50' src={assetImg} alt='nft-image' />
-          {`${assetName} / ${info?.tokenDetail?.name}`}
-          <div className='w-10 h-10 rounded-full bg-slate-100 border border-gray-200 backdrop-blur-sm flex justify-center items-center'>
-            <StarFilledIcon width={20} height={20} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
-          </div>
-        </div>
-        {PriceData.map((item, index) => {
-          if (!item) return null
-          return (
-            <div key={`price_${index}`}>
-              <div className='text-base font-normal'>{item.title}</div>
-              <div className='text-xl font-medium mt-[27px] text-center'>{item.price}</div>
-            </div>
-          )
-        })}
-        <div className=' h-[87px] bg-[#FBF7F7] flex items-center px-2'>
-          <img className='w-20 h-20 rounded-full' src={assetImg} alt='nft-image' />
-          <div className=' ml-5'>
-            <div className='flex items-center'>
-              <span className=' mr-2'>{assetName}</span>
-              <img src='/start.svg' />
-            </div>
+          <div>
+            {`${assetName} / ${info?.tokenDetail?.name || ''}`}
             <div className='flex items-center gap-2 mt-2'>
               <button onClick={copyTextToClipboard}>
                 <img src='/copy.svg' />
@@ -265,17 +241,29 @@ function TpTrade({ tp }: { tp: TradePair }) {
               )}
             </div>
           </div>
+          <div className='w-10 h-10 rounded-full bg-slate-100 border border-gray-200 backdrop-blur-sm flex justify-center items-center hidden'>
+            <StarFilledIcon width={20} height={20} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+          </div>
+        </div>
+        <div className='flex items-center gap-4 justify-between ml-auto'>
+          {PriceData.map((item, index) => {
+            if (!item) return null
+            return (
+              <div className='whitespace-nowrap' key={`price_${index}`}>
+                <div className='text-base font-normal'>{item.title}</div>
+                <div className='text-xl font-medium mt-[27px] text-center'>{item.price}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      <div className='flex justify-end items-center gap-[10px] '>
+      <div className='flex justify-end flex-wrap items-center gap-[10px] '>
         <TpBalance tp={tp} isSimulation={false} ref={tpBalanceRef} />
         <Button onClick={() => r.push(`/trade/simulation/${tp.id}`)}>Simulation</Button>
-        <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>
-          History
-        </Button>
+        <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>History</Button>
       </div>
-      <div className='grid md:grid-cols-2 gap-5'>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
         <div className=''>
           <div className='mb-5 font-medium text-xl'>Bids</div>
           <div className='border border-gray-200 rounded-2xl'>
@@ -353,9 +341,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} />
       </div>
       {openList && <ListForSale open={true} onOpenChange={() => (refetchOrderList(), setOpenList(false))} tp={tp} />}
-      {openPlaceBid && (
-        <PlaceBid open={true} onOpenChange={() => (refetchOrderList(), setOpenPlaceBid(false))} tp={tp} />
-      )}
+      {openPlaceBid && <PlaceBid open={true} onOpenChange={() => (refetchOrderList(), setOpenPlaceBid(false))} tp={tp} />}
       {openBuy && (
         <BuyForList
           open={true}

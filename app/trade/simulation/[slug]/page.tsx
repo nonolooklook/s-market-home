@@ -54,8 +54,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 ||
-            (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
           return item.detail.parameters.offer[0].token == tp.token && isFilterForPrice
         })
         .sort((a, b) => {
@@ -69,8 +68,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 ||
-            (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
           return item.detail.parameters.offer[0].token == tp.asset && isFilterForPrice
         })
         .sort((a, b) => {
@@ -132,10 +130,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           {sellOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-green-400' />
           )}
-          <RowTip
-            trigger={<div className='h-full absolute left-0 w-full' />}
-            content={<HoverModalList order={o} tp={tp} />}
-          />
+          <RowTip trigger={<div className='h-full absolute left-0 w-full' />} content={<HoverModalList order={o} tp={tp} />} />
         </Fragment>,
       ]
     })
@@ -156,10 +151,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           {buyOrders.find((item) => item.id == o.id) && (
             <div className='h-full absolute left-0 w-full bg-stone-400/30 rounded-md border border-solid border-red-400' />
           )}
-          <RowTip
-            trigger={<div className='h-full absolute left-0 w-full' />}
-            content={<HoverModalList order={o} tp={tp} />}
-          />
+          <RowTip trigger={<div className='h-full absolute left-0 w-full' />} content={<HoverModalList order={o} tp={tp} />} />
         </Fragment>,
       ]
     })
@@ -226,27 +218,8 @@ function TpTrade({ tp }: { tp: TradePair }) {
       <div className='flex items-center justify-between text-2xl font-medium'>
         <div className='flex items-center gap-4'>
           <img className='w-20 h-20 rounded-full bg-amber-50' src={assetImg} alt='nft-image' />
-          {`${assetName} / ${info?.tokenDetail?.name}`}
-          <div className='w-10 h-10 rounded-full bg-slate-100 border border-gray-200 backdrop-blur-sm flex justify-center items-center'>
-            <StarFilledIcon width={20} height={20} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
-          </div>
-        </div>
-        {PriceData.map((item, index) => {
-          if (!item) return null
-          return (
-            <div key={`price_${index}`}>
-              <div className='text-base font-normal'>{item.title}</div>
-              <div className='text-xl font-medium mt-[27px] text-center'>{item.price}</div>
-            </div>
-          )
-        })}
-        <div className=' h-[87px] bg-[#FBF7F7] flex items-center px-2'>
-          <img className='w-20 h-20 rounded-full' src={assetImg} alt='nft-image' />
-          <div className=' ml-5'>
-            <div className='flex items-center'>
-              <span className=' mr-2'>{assetName}</span>
-              <img src='/start.svg' />
-            </div>
+          <div>
+            {`${assetName} / ${info?.tokenDetail?.name || ''}`}
             <div className='flex items-center gap-2 mt-2'>
               <button onClick={copyTextToClipboard}>
                 <img src='/copy.svg' />
@@ -268,10 +241,24 @@ function TpTrade({ tp }: { tp: TradePair }) {
               )}
             </div>
           </div>
+          <div className='w-10 h-10 rounded-full bg-slate-100 border border-gray-200 backdrop-blur-sm flex justify-center items-center hidden'>
+            <StarFilledIcon width={20} height={20} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+          </div>
+        </div>
+        <div className='flex items-center gap-4 justify-between ml-auto'>
+          {PriceData.map((item, index) => {
+            if (!item) return null
+            return (
+              <div className='whitespace-nowrap' key={`price_${index}`}>
+                <div className='text-base font-normal'>{item.title}</div>
+                <div className='text-xl font-medium mt-[27px] text-center'>{item.price}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      <div className='flex justify-end gap-[10px] items-center'>
+      <div className='flex justify-end flex-wrap gap-[10px] items-center'>
         <TpBalance tp={tp} isSimulation ref={tpBalanceRef} />
         <Button onClick={() => r.push(`/trade/${tp.id}`)}>Real</Button>
         <RequestCoins tp={tp} onSuccess={() => tpBalanceRef.current?.()} />
@@ -357,9 +344,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} isSimulation />
       </div>
       {openList && <ListForSale open={true} onOpenChange={() => (refetchOrderList(), setOpenList(false))} tp={tp} />}
-      {openPlaceBid && (
-        <PlaceBid open={true} onOpenChange={() => (refetchOrderList(), setOpenPlaceBid(false))} tp={tp} />
-      )}
+      {openPlaceBid && <PlaceBid open={true} onOpenChange={() => (refetchOrderList(), setOpenPlaceBid(false))} tp={tp} />}
       {openBuy && (
         <BuyForList
           open={true}

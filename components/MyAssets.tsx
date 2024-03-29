@@ -17,6 +17,7 @@ import { Spinner } from './Spinner'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import STable from './SimpleTable'
+import { Loading } from './Loading'
 
 type GeneralProps = {
   tps: TradePair[]
@@ -26,7 +27,7 @@ function Inventory(p: GeneralProps) {
   const r = useRouter()
   const { address } = useAccount()
   const pc = usePublicClient()
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: [address, toJson(p.tps)],
     queryFn: async () => {
       const balance = await Promise.all(
@@ -42,6 +43,7 @@ function Inventory(p: GeneralProps) {
       return p.tps.map((item, i) => ({ ...item, balance: balance[i] as bigint })).filter((item) => item.balance > 0n)
     },
   })
+  if (isLoading) return <Loading />
   return (
     <div className='grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]'>
       {data?.map((item, i) => {
@@ -53,7 +55,7 @@ function Inventory(p: GeneralProps) {
             style={{ border: '1px solid rgba(0, 0, 0, 0.3)' }}
             className='rounded-lg overflow-hidden flex flex-col gap-3 pb-4'
           >
-            <img src={item.assetImg} className={cn('w-full aspect-video rounded-lg', isErc20 ? 'object-contain' : 'object-cover')} />
+            <img src={item.assetImg} className={cn('w-full rounded-lg object-cover aspect-square')} />
             <div className='flex flex-col gap-1 px-4 text-sm'>
               <div>{item.assetName}</div>
               <div>Amount:{displayBn(item.balance, assetDecimals > 0 ? 2 : 0, assetDecimals)}</div>
@@ -96,7 +98,7 @@ function OrderCancel(p: { order: OrderWrapper; onSuccess: () => void }) {
 
 function Listed(p: GeneralProps & { bid?: boolean }) {
   const { address } = useAccount()
-  const { data = [], refetch } = useQuery({
+  const { data = [], refetch, isLoading } = useQuery({
     queryKey: ['listed', address, toJson(p.tps)],
     queryFn: async () => {
       if (!address) return
@@ -114,6 +116,7 @@ function Listed(p: GeneralProps & { bid?: boolean }) {
     },
   })
   const items = data.filter((item) => item[1].detail.parameters.offer[0].token == (p.bid ? item[0].token : item[0].asset))
+  if (isLoading) return <Loading />
   return (
     <GridTable
       header={['Order', 'Amount', 'Min', 'Expected', 'Max', '']}
@@ -156,24 +159,37 @@ const getDate = (item: any) => {
   return utcFormat('%Y-%m-%d %H:%M:%S')(new Date(time))
 }
 
-function TradeHistory() {
+const tpKeyOf = (asset: string, assetId: number | string, tokenSymbol: string) =>
+  `${asset.toLowerCase()}_${assetId}_${tokenSymbol.toLowerCase()}`
+
+function TradeHistory(p: GeneralProps) {
   const { address } = useAccount()
   const { pairs } = useTradePairs()
+  const filterTpMap = useMemo(() => {
+    const map: { [k: number | string]: TradePair } = {}
+    p.tps.forEach((tp) => {
+      map[tpKeyOf(tp.asset, tp.assetId?.toString() || '0', tp.tokenSymbol)] = tp
+    })
+    return map
+  }, [p.tps])
   const tpMap = useMemo(() => {
     const map: { [k: number | string]: TradePair } = {}
     pairs.forEach((tp) => {
-      map[`${tp.asset.toLowerCase()}_${tp.assetId?.toString()}_${tp.tokenSymbol.toLowerCase()}`] = tp
+      map[tpKeyOf(tp.asset, tp.assetId?.toString() || '0', tp.tokenSymbol)] = tp
     })
     return map
   }, [pairs])
-  const { data = [] } = useQuery({
+  const { data = [], isLoading } = useQuery({
     queryKey: ['trade-history', address],
     queryFn: async () => {
       if (!address) return []
       return getTradeHistory(address)
     },
   })
-  const history = pairs.length && address ? data : []
+  const history = (p.tps.length && address && !isLoading ? data : []).filter(
+    (item) => filterTpMap[tpKeyOf(item.collection_address, item.token_id, item.token_name)],
+  )
+  if (isLoading) return <Loading />
   return (
     <div>
       <div className='flex flex-wrap items-center gap-2'></div>
@@ -183,27 +199,11 @@ function TradeHistory() {
           span={{ 1: 2, 2: 2, 7: 2, 11: 2 }}
           header={['Order number', 'Date', 'Pair', 'Side', 'Price', 'Executed', 'Role', 'Min Price/Max Price', 'Fee', 'Total', 'Txn hash']}
           data={history.map((item: any) => {
-            /*
-collection_address: "0x0DbC6f35a8391Fafd02E99e76336dB0fC072Ca6D"
-collection_name: "Azuki"
-collection_type: 1
-id: 7
-match_timestamp: 1706602602
-match_tx_hash: "0x807b6e5e5e2e2f57350744818c5f6aa7c699cda9590c03d0c09aee99b9a135e0"
-max_price: "10.0000000000"
-min_price: "8.0000000000"
-order_detail: {extraData: "0x", numerator: 1,…}
-price: "8.6504000000"
-task_detail: {makerOrders: [{extraData: "0x", numerator: 1,…}, {extraData: "0x", numerator: 1,…},…],…}
-task_hash: "T8035ce1b-789f-4b3f-8845-e2bcca48c875-1706602585"
-token_id: 1
-token_name: "USDC"
-          */
             const makerOrder = item?.task_detail?.makerOrders[0]
             const count = Number(makerOrder.numerator)
             const role = getRole(item, address as any)
             const side = getSide(item, role)
-            const key = `${item.collection_address.toLowerCase()}_${item.token_id}_${item.token_name.toLowerCase()}`
+            const key = tpKeyOf(item.collection_address, item.token_id, item.token_name)
             const tp = tpMap[key]
             const [min, max] = getOrderPerMinMaxBigint(makerOrder, tpMap[key])
             const txLink = getCurrentExploerUrl() + '/tx/' + item.match_tx_hash
@@ -251,9 +251,9 @@ token_name: "USDC"
 
 const TabValues = ['inventory', 'listed', 'bidding', 'history'] as const
 type TabValueType = (typeof TabValues)[number]
-export function MyAssets(p: { erc20?: boolean }) {
+export function MyAssets(p: { erc20?: boolean; nfts?: boolean }) {
   const { pairs } = useTradePairs()
-  const tps = pairs.filter((pair) => (p.erc20 ? pair.assetType == 'ERC20' : true))
+  const tps = pairs.filter((pair) => (p.erc20 ? pair.assetType == 'ERC20' : p.nfts ? pair.assetType != 'ERC20' : true))
   const sp = useSearchParams()
   const [tab, setTab] = useState<TabValueType>('inventory')
   const stab = sp.get('tab') as TabValueType
@@ -290,7 +290,7 @@ export function MyAssets(p: { erc20?: boolean }) {
         <Listed tps={tps} bid />
       </TabsContent>
       <TabsContent value='history'>
-        <TradeHistory />
+        <TradeHistory tps={tps} />
       </TabsContent>
     </Tabs>
   )
