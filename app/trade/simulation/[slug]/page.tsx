@@ -60,7 +60,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         .sort((a, b) => {
           const aep = getOrderEPbigint(a.detail, tp)
           const bep = getOrderEPbigint(b.detail, tp)
-          return aep > bep ? 1 : aep == bep ? 0 : -1
+          return aep > bep ? -1 : aep == bep ? 0 : 1
         })
         .value(),
       _.chain(data)
@@ -74,7 +74,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
         .sort((a, b) => {
           const aep = getOrderEPbigint(a.detail, tp)
           const bep = getOrderEPbigint(b.detail, tp)
-          return aep > bep ? -1 : aep == bep ? 0 : 1
+          return aep > bep ? 1 : aep == bep ? 0 : -1
         })
         .value(),
     ],

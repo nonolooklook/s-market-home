@@ -1,8 +1,15 @@
 import { ItemType, Order, TradePair } from './types'
 import { displayBn } from './utils'
 
-export const getOrderPerMinMaxBigint = (order: Order, tp: TradePair): [bigint, bigint] => {
+export const getOrderAssetInfo = (order: Order, tp: TradePair) => {
   const offerIsAsset = order.parameters.offer[0].token == tp.asset
+  const asset = offerIsAsset ? order.parameters.offer[0] : order.parameters.consideration[0]
+  const assetIsErc20 = asset.itemType == ItemType.ERC20
+  return { offerIsAsset, asset, assetIsErc20 }
+}
+
+export const getOrderPerMinMaxBigint = (order: Order, tp: TradePair): [bigint, bigint] => {
+  const { offerIsAsset, asset, assetIsErc20 } = getOrderAssetInfo(order, tp)
   const tokens = offerIsAsset ? order.parameters.consideration : order.parameters.offer
   let min = 0n,
     max = 0n
@@ -10,8 +17,6 @@ export const getOrderPerMinMaxBigint = (order: Order, tp: TradePair): [bigint, b
     min += BigInt(op.startAmount)
     max += BigInt(op.endAmount)
   })
-  const asset = offerIsAsset ? order.parameters.offer[0] : order.parameters.consideration[0]
-  const assetIsErc20 = asset.itemType == ItemType.ERC20
   const assetDecimals = assetIsErc20 ? 18n : 0n
   const count = BigInt(asset.startAmount)
   return [(min * 10n ** assetDecimals) / count, (max * 10n ** assetDecimals) / count]

@@ -1,10 +1,10 @@
 import { MarketABI } from '@/lib/abi/MarketAbi'
 import { getOrderList, getTradeHistory } from '@/lib/api'
-import { MarketAddress, getCurrentExploerUrl } from '@/lib/config'
+import { DECIMAL18, MarketAddress, getCurrentExploerUrl } from '@/lib/config'
 import { useTradePairs } from '@/lib/hooks/useTradePairs'
 import { covert2OrderComponents } from '@/lib/market'
 import { erc1155ABI } from '@/lib/nft'
-import { getOrderEP, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
+import { getOrderAssetInfo, getOrderEP, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
 import { Order, OrderWrapper, TradePair } from '@/lib/types'
 import { cn, displayBn, fmtBn, handleError, parseBn, shortStr, toJson } from '@/lib/utils'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -44,21 +44,30 @@ function Inventory(p: GeneralProps) {
     },
   })
   if (isLoading) return <Loading />
+  if (!p.tps.length) return null
+  const isERC20 = p.tps[0].assetType == 'ERC20'
+  const assetDecimals = isERC20 ? 18 : 0
   return (
-    <div className='grid gap-2 grid-cols-[repeat(auto-fill,minmax(200px,1fr))]'>
+    <div
+      className={cn(
+        'grid gap-2',
+        isERC20 ? 'grid-cols-[repeat(auto-fill,minmax(240px,1fr))]' : 'grid-cols-[repeat(auto-fill,minmax(200px,1fr))]',
+      )}
+    >
       {data?.map((item, i) => {
-        const isErc20 = item.assetType == 'ERC20'
-        const assetDecimals = isErc20 ? 18 : 0
         return (
           <div
             key={'nft_' + i}
             style={{ border: '1px solid rgba(0, 0, 0, 0.3)' }}
             className='rounded-lg overflow-hidden flex flex-col gap-3 pb-4'
           >
-            <img src={item.assetImg} className={cn('w-full rounded-lg object-cover aspect-square')} />
+            <img
+              src={item.assetImg}
+              className={cn('w-full rounded-lg ', isERC20 ? 'aspect-video object-contain' : 'aspect-square object-cover')}
+            />
             <div className='flex flex-col gap-1 px-4 text-sm'>
               <div>{item.assetName}</div>
-              <div>Amount:{displayBn(item.balance, assetDecimals > 0 ? 2 : 0, assetDecimals)}</div>
+              <div>Amount: {displayBn(item.balance, assetDecimals > 0 ? 2 : 0, assetDecimals)}</div>
               <Button onClick={() => r.push(`/trade/${item.id}`)}>List for Sell</Button>
             </div>
           </div>
@@ -98,7 +107,11 @@ function OrderCancel(p: { order: OrderWrapper; onSuccess: () => void }) {
 
 function Listed(p: GeneralProps & { bid?: boolean }) {
   const { address } = useAccount()
-  const { data = [], refetch, isLoading } = useQuery({
+  const {
+    data = [],
+    refetch,
+    isLoading,
+  } = useQuery({
     queryKey: ['listed', address, toJson(p.tps)],
     queryFn: async () => {
       if (!address) return
@@ -200,16 +213,17 @@ function TradeHistory(p: GeneralProps) {
           header={['Order number', 'Date', 'Pair', 'Side', 'Price', 'Executed', 'Role', 'Min Price/Max Price', 'Fee', 'Total', 'Txn hash']}
           data={history.map((item: any) => {
             const makerOrder = item?.task_detail?.makerOrders[0]
-            const count = Number(makerOrder.numerator)
+            const key = tpKeyOf(item.collection_address, item.token_id, item.token_name)
+            const { assetIsErc20 } = getOrderAssetInfo(makerOrder, tpMap[key])
+            const count = parseBn(makerOrder.numerator + '', assetIsErc20 ? 0 : 18)
             const role = getRole(item, address as any)
             const side = getSide(item, role)
-            const key = tpKeyOf(item.collection_address, item.token_id, item.token_name)
             const tp = tpMap[key]
             const [min, max] = getOrderPerMinMaxBigint(makerOrder, tpMap[key])
             const txLink = getCurrentExploerUrl() + '/tx/' + item.match_tx_hash
-            const fee = (Number(item.price) * 0.005 * count).toFixed(2)
-            const executedPrice = Number(item.price).toFixed(2)
-            const total = (Number(item.price) * count).toFixed(2)
+            const priceBn = parseBn(item.price + '')
+            const fee = (priceBn * count * 5n) / 1000n / DECIMAL18
+            const total = (priceBn * count) / DECIMAL18
             const tokenSymbol = item.token_name
 
             return [
@@ -226,7 +240,7 @@ function TradeHistory(p: GeneralProps) {
                 {side}
               </span>, // Side
               `${getOrderEP(makerOrder as any, tp)} ${tokenSymbol}`, // Price
-              `${executedPrice} ${tokenSymbol}`, // Executed
+              `${displayBn(priceBn)} ${tokenSymbol}`, // Executed
               role, // Role
               <div key='minmax'>
                 <div>
@@ -236,8 +250,8 @@ function TradeHistory(p: GeneralProps) {
                   {displayBn(max)} {tokenSymbol}
                 </div>
               </div>, // Min Price/Max Price;
-              `${fee} ${tokenSymbol}`, // Fee
-              `${total} ${tokenSymbol}`, // Total
+              `${displayBn(fee)} ${tokenSymbol}`, // Fee
+              `${displayBn(total)} ${tokenSymbol}`, // Total
               <a href={txLink} target='_blank' key={'link'} rel='noreferrer' className='text-blue-300'>
                 {shortStr(item.match_tx_hash, 8, 6)}
               </a>,
