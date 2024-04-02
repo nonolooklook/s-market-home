@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { Montserrat } from 'next/font/google'
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
 import './globals.css'
+
 const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font' })
 // const inter = Inter({ subsets: ["latin"] });
 import dynamic from 'next/dynamic'

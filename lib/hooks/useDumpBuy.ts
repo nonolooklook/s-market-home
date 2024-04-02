@@ -12,13 +12,7 @@ import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToI
 import { handleError, parseBn, sleep } from '../utils'
 import { useRequestMatchOrder } from './useRequestMatchOrder'
 
-export function useDumpBuy(
-  tp: TradePair,
-  orders: OrderWrapper[],
-  count: number,
-  onSuccess?: () => void,
-  isSimulation?: boolean,
-) {
+export function useDumpBuy(tp: TradePair, orders: OrderWrapper[], count: number, onSuccess?: () => void, isSimulation?: boolean) {
   const clients = useClients()
   const [loading, setLoading] = useState(false)
   const isErc20 = tp.assetType === 'ERC20'
@@ -123,7 +117,11 @@ export function useDumpBuy(
       })
       const hashes = makerOrders.map<Address>((m) => m.order_hash).concat([takerOrder.orderHash])
       !isSimulation && (await reqMatchOrder(hashes))
-      const success = await txs.intevalCheckStatus(res.hash, getOrderPerMinMax(makerOrders[0].detail, tp))
+      const minmaxs = makerOrders.map((m) => {
+        const [min, max] = getOrderPerMinMax(m.detail, tp)
+        return { min, max }
+      })
+      const success = await txs.intevalCheckStatus(res.hash, minmaxs)
       success && onSuccess && onSuccess()
       setLoading(false)
     } catch (error) {

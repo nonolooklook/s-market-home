@@ -12,6 +12,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import { useInterval } from 'usehooks-ts'
 import { Button } from './ui/button'
+import { Pagination } from 'swiper/modules'
+import { Swiper, SwiperSlide } from 'swiper/react'
 
 function StepDot({ active }: { active: boolean }) {
   return (
@@ -122,17 +124,7 @@ function LoadArrow({ anim, position }: { anim: boolean; position: '>>' | '<<' })
 export type ValueType = 'low' | 'mid' | 'large' | 'super'
 const ValueTypes: ValueType[] = ['low', 'mid', 'large', 'super']
 
-function PriceItem({
-  tit,
-  value,
-  txHash,
-  valueType,
-}: {
-  tit: string
-  txHash?: string
-  value?: string
-  valueType?: ValueType
-}) {
+function PriceItem({ tit, value, txHash, valueType }: { tit: string; txHash?: string; value?: string; valueType?: ValueType }) {
   // valueType && (valueType = 'large')
   const TypeValue = () => {
     if (!valueType) return <div>{value} USDC</div>
@@ -167,18 +159,12 @@ function PriceItem({
           <span className='text-lg'>{value}</span>
           <span className='text-sm ml-1'>USDC</span>
         </div>
-        {valueType == 'super' && (
-          <Image src={'/rainbow.gif'} alt='' width={58} height={50} className='absolute -left-6 -top-3' />
-        )}
+        {valueType == 'super' && <Image src={'/rainbow.gif'} alt='' width={58} height={50} className='absolute -left-6 -top-3' />}
         {valueType == 'large' && (
           <Image src={'/rainbow.png'} alt='' width={58} height={29} className='absolute object-contain -left-8 top-1' />
         )}
-        {valueType == 'mid' && (
-          <Image src={'/smiling.png'} alt='' width={48} height={40} className='absolute -left-5 -top-2' />
-        )}
-        {valueType == 'low' && (
-          <Image src={'/low.png'} alt='' width={48} height={40} className='absolute -left-5 -top-1' />
-        )}
+        {valueType == 'mid' && <Image src={'/smiling.png'} alt='' width={48} height={40} className='absolute -left-5 -top-2' />}
+        {valueType == 'low' && <Image src={'/low.png'} alt='' width={48} height={40} className='absolute -left-5 -top-1' />}
       </div>
     )
   }
@@ -226,6 +212,7 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
   }
   const r = useRouter()
   const pathname = usePathname()
+  const step0 = type == 'step' ? steps[0] : undefined
 
   return (
     <Dialog open={true} onOpenChange={() => wrapClose(false)}>
@@ -261,70 +248,88 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
             </Button>
           </div>
         )}
-        {type == 'step' &&
-          steps.map((step, index) => (
-            <div className='flex w-full overflow-x-auto gap-2' key={`step_item_${index}`}>
-              <div className='w-full'>
-                <div className='py-8 px-5 flex flex-col items-center gap-5 w-full'>
-                  <Step3 step={step.step} />
-                  <div className='flex flex-row items-center justify-between w-full'>
-                    <Image src={'/sse.png'} alt='' width={80} height={80} />
-                    <div className='flex flex-col gap-2 items-center  text-sm'>
-                      <div className={cn(step.step == 0 ? '' : 'opacity-20')}>requests</div>
-                      <LoadArrow anim={step.step == 0} position='>>' />
-                      {step.step > 0 && <LoadArrow anim={step.step == 1} position='<<' />}
-                      {step.step > 0 && <div className={step.step == 1 ? '' : 'opacity-20'}>back</div>}
-                    </div>
-                    <Image src={'/chainlink.png'} alt='' width={80} height={80} />
-                  </div>
+        {step0 && (
+          <div className='w-full'>
+            <div className='py-8 px-5 flex flex-col items-center gap-5 w-full'>
+              <Step3 step={step0.step} />
+              <div className='flex flex-row items-center justify-between w-full'>
+                <Image src={'/sse.png'} alt='' width={80} height={80} />
+                <div className='flex flex-col gap-2 items-center  text-sm'>
+                  <div className={cn(step0.step == 0 ? '' : 'opacity-20')}>requests</div>
+                  <LoadArrow anim={step0.step == 0} position='>>' />
+                  {step0.step > 0 && <LoadArrow anim={step0.step == 1} position='<<' />}
+                  {step0.step > 0 && <div className={step0.step == 1 ? '' : 'opacity-20'}>back</div>}
+                </div>
+                <Image src={'/chainlink.png'} alt='' width={80} height={80} />
+              </div>
+            </div>
+          </div>
+        )}
+        {type == 'step' && (
+          <Swiper
+            spaceBetween={20}
+            pagination={
+              steps.length > 1 && step0 && step0.step == 2
+                ? {
+                    clickable: true,
+                    renderBullet: function (index, className) {
+                      return '<span class="' + className + '">' + (index + 1) + '</span>'
+                    },
+                  }
+                : false
+            }
+            className='w-full mt-5'
+            modules={[Pagination]}
+          >
+            {steps.map((step, index) => (
+              <SwiperSlide className='flex w-full overflow-x-auto gap-2' key={`step_item_${index}`}>
+                <div className='flex flex-col items-center gap-5 w-full'>
                   {step.step > 0 && (
                     <div className='flex flex-col gap-6 w-full'>
                       <PriceItem tit='Max price:' value={step.max} />
-                      <PriceItem
-                        tit='Final price:'
-                        value={step.price}
-                        valueType={step.priceType}
-                        txHash={step.txHash}
-                      />
+                      <PriceItem tit='Final price:' value={step.price} valueType={step.priceType} txHash={step.txHash} />
                       <PriceItem tit='Min price:' value={step.min} />
                     </div>
                   )}
                 </div>
-                <div className='w-full px-5 py-5 border-t border-solid border-[#484848] text-center'>
-                  {step.step == 0 && <div>Node requests a random number from Chainlink</div>}
-                  {step.step == 1 && <div>Wait for Chainlink to back a random number</div>}
-                  {step.step == 2 && (
-                    <div className='flex items-center justify-between'>
-                      <Button
-                        variant='secondary'
-                        onClick={() => {
-                          if (pathname == '/my') {
-                            window.location.reload()
-                          } else {
-                            r.push('/my')
-                          }
-                        }}
-                      >
-                        View Profile
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          if (pathname.startsWith('/trade')) {
-                            // window.location.reload()
-                            wrapClose(true)
-                          } else {
-                            r.push('/trade')
-                          }
-                        }}
-                      >
-                        Back to Marketplace
-                      </Button>
-                    </div>
-                  )}
-                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        )}
+        {step0 && (
+          <div className='w-full px-5 py-5 border-t border-solid border-[#484848] text-center'>
+            {step0.step == 0 && <div>Node requests a random number from Chainlink</div>}
+            {step0.step == 1 && <div>Wait for Chainlink to back a random number</div>}
+            {step0.step == 2 && (
+              <div className='flex items-center justify-between'>
+                <Button
+                  variant='secondary'
+                  onClick={() => {
+                    if (pathname == '/my') {
+                      window.location.reload()
+                    } else {
+                      r.push('/my')
+                    }
+                  }}
+                >
+                  View Profile
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (pathname.startsWith('/trade')) {
+                      // window.location.reload()
+                      wrapClose(true)
+                    } else {
+                      r.push('/trade')
+                    }
+                  }}
+                >
+                  Back to Marketplace
+                </Button>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -363,26 +368,23 @@ export function useTxStatus({
     }
   }, [typestep, setTxsOpen, onRetry, onBack])
 
-  const intevalCheckStatus = async (reqId: string, [min, max]: [string, string]) => {
-    setTypeStep({ type: 'step', step: { step: 0, min, max } })
+  const intevalCheckStatus = async (reqId: string, minmax: [string, string] | { min: string; max: string }[]) => {
+    const minmaxs: { min: string; max: string }[] = typeof minmax[0] == 'string' ? [{ min: minmax[0], max: minmax[1] }] : (minmax as any)
+    setTypeStep({ type: 'step', step: minmaxs.map((item) => ({ ...item, step: 0 })) })
     while (true) {
       await sleep(5000)
-      const r2 = await apiGet<TxTaskStatus>(
-        isSimulation ? `/mock/task/${reqId}/detail` : `/common/order/task/${reqId}/detail`,
-      ).catch(() => null)
+      const r2 = await apiGet<TxTaskStatus>(isSimulation ? `/mock/task/${reqId}/detail` : `/common/order/task/${reqId}/detail`).catch(
+        () => null,
+      )
       if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
-        safeRef.current && setTypeStep({ type: 'step', step: { step: 1, min, max } })
+        safeRef.current && setTypeStep({ type: 'step', step: minmaxs.map((item) => ({ ...item, step: 1 })) })
       }
-      if (
-        r2?.task_status === MATCH_SUCCESS &&
-        r2?.order_probability_detail &&
-        r2?.order_probability_detail.length > 0
-      ) {
+      if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {
         const opd = r2.order_probability_detail[0]
         safeRef.current &&
           setTypeStep({
             type: 'step',
-            step: { step: 2, min, max, txHash: r2?.match_tx_hash, price: displayBn(parseBn(opd.price.toFixed(4))) },
+            step: minmaxs.map((item) => ({ ...item, step: 2, txHash: r2?.match_tx_hash, price: displayBn(parseBn(opd.price.toFixed(4))) })),
           })
         return true
       }
