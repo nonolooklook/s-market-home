@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 
 export default function Home() {
   const r = useRouter()
-  const lastTpId = localStorage.getItem('last-tp-id') || '1'
+  const lastTpId = localStorage.getItem('last-tp-id') || '5'
   const refLast = useRef('')
   useEffect(() => {
     if (lastTpId != refLast.current) {
