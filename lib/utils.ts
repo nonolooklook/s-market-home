@@ -47,12 +47,12 @@ export function displayBn(value: bigint | undefined | null, fixed: number = 2, u
   const strvlaue = fmtBn(value, unit, def)
   return Number(strvlaue).toLocaleString('en-US', {
     maximumFractionDigits: fixed,
-    minimumFractionDigits: fixed,
+    // minimumFractionDigits: fixed,
   })
 }
 
-export function parseBn(value: string, decimals: number | bigint = 18) {
-  const mvaule = !value ? '0' : value
+export function parseBn(value: string | number, decimals: number | bigint = 18) {
+  const mvaule = !value ? '0' : value + ''
   const mdecimals = typeof decimals == 'bigint' ? parseInt(decimals.toString()) : decimals
   return parseUnits(mvaule.replaceAll(',', ''), mdecimals)
 }

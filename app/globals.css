@@ -76,7 +76,8 @@
   }
   body {
     @apply text-foreground font-main w-full min-h-full h-max !bg-white !bg-contain bg-no-repeat;
-    font-family: var(--font);
+    font-family: system-ui, Inter, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+      'Helvetica Neue', sans-serif !important;
   }
   main {
     @apply flex flex-col px-4 md:px-11 gap-8 py-5;

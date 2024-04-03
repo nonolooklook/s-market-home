@@ -10,7 +10,7 @@ import { cn, displayBn, fmtBn, handleError, parseBn, shortStr, toJson } from '@/
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { utcFormat } from 'd3'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { erc721ABI, useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import GridTable from './GridTable'
 import { Spinner } from './Spinner'
@@ -18,6 +18,7 @@ import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import STable from './SimpleTable'
 import { Loading } from './Loading'
+import { useSyncSearchParams } from '@/lib/hooks/useSyncSearchParams'
 
 type GeneralProps = {
   tps: TradePair[]
@@ -65,7 +66,7 @@ function Inventory(p: GeneralProps) {
               src={item.assetImg}
               className={cn('w-full rounded-lg ', isERC20 ? 'aspect-video object-contain' : 'aspect-square object-cover')}
             />
-            <div className='flex flex-col gap-1 px-4 text-sm'>
+            <div className='flex flex-col gap-1 px-4 text-sm whitespace-nowrap'>
               <div>{item.assetName}</div>
               <div>Amount: {displayBn(item.balance, assetDecimals > 0 ? 2 : 0, assetDecimals)}</div>
               <Button onClick={() => r.push(`/trade/${item.id}`)}>List for Sell</Button>
@@ -168,8 +169,24 @@ const getSide = (item: any, role: string) => {
 }
 
 const getDate = (item: any) => {
+  if (item.match_timestamp == null) return '-'
   const time = Number(item.match_timestamp) * 1000
   return utcFormat('%Y-%m-%d %H:%M:%S')(new Date(time))
+}
+
+const getStatus = (item: any) => {
+  const statusMap: { [k: string]: string } = {
+    '0': 'Created',
+    '1': 'GasPayed',
+    '2': 'PrepareSuccess',
+    '3': 'CatchRandom',
+    '4': 'Matching',
+    '5': 'Success',
+    '-1': 'PrepareFailed',
+    '-2': 'MatchingFailed',
+    '-3': 'InvalidGas',
+  }
+  return statusMap[item.task_status + ''] || '-'
 }
 
 const tpKeyOf = (asset: string, assetId: number | string, tokenSymbol: string) =>
@@ -210,7 +227,20 @@ function TradeHistory(p: GeneralProps) {
         <STable
           className='min-w-[1500px]'
           span={{ 1: 2, 2: 2, 7: 2, 11: 2 }}
-          header={['Order number', 'Date', 'Pair', 'Side', 'Price', 'Executed', 'Role', 'Min Price/Max Price', 'Fee', 'Total', 'Txn hash']}
+          header={[
+            'Order number',
+            'Date',
+            'Status',
+            'Pair',
+            'Side',
+            'Price',
+            'Executed',
+            'Role',
+            'Min Price/Max Price',
+            'Fee',
+            'Total',
+            'Txn hash',
+          ]}
           data={history.map((item: any) => {
             const makerOrder = item?.task_detail?.makerOrders[0]
             const key = tpKeyOf(item.collection_address, item.token_id, item.token_name)
@@ -221,7 +251,7 @@ function TradeHistory(p: GeneralProps) {
             const tp = tpMap[key]
             const [min, max] = getOrderPerMinMaxBigint(makerOrder, tpMap[key])
             const txLink = getCurrentExploerUrl() + '/tx/' + item.match_tx_hash
-            const priceBn = parseBn(item.price + '')
+            const priceBn = parseBn(item.price)
             const fee = (priceBn * count * 5n) / 1000n / DECIMAL18
             const total = (priceBn * count) / DECIMAL18
             const tokenSymbol = item.token_name
@@ -229,14 +259,11 @@ function TradeHistory(p: GeneralProps) {
             return [
               shortStr(item.id + ''), // Order number
               getDate(item), // Date
+              <span key='status' className={cn({ 'text-green-400': item.task_status > 0, 'text-red-400': item.task_status < 0 })}>
+                {getStatus(item)}
+              </span>, // Status
               `${tp.assetName}/${tokenSymbol}`, // Pair
-              <span
-                key='side'
-                className={cn({
-                  'text-green-400': side == 'Buy',
-                  'text-red-400': side == 'Sale',
-                })}
-              >
+              <span key='side' className={cn({ 'text-green-400': side == 'Buy', 'text-red-400': side == 'Sale' })}>
                 {side}
               </span>, // Side
               `${getOrderEP(makerOrder as any, tp)} ${tokenSymbol}`, // Price
@@ -263,30 +290,14 @@ function TradeHistory(p: GeneralProps) {
   )
 }
 
-const TabValues = ['inventory', 'listed', 'bidding', 'history'] as const
-type TabValueType = (typeof TabValues)[number]
-export function MyAssets(p: { erc20?: boolean; nfts?: boolean }) {
+const TabValues = ['inventory', 'listed', 'bidding', 'history']
+
+export const MyAssets = React.memo((p: { erc20?: boolean; nfts?: boolean }) => {
   const { pairs } = useTradePairs()
   const tps = pairs.filter((pair) => (p.erc20 ? pair.assetType == 'ERC20' : p.nfts ? pair.assetType != 'ERC20' : true))
-  const sp = useSearchParams()
-  const [tab, setTab] = useState<TabValueType>('inventory')
-  const stab = sp.get('tab') as TabValueType
-  useEffect(() => {
-    if (TabValues.includes(stab)) {
-      setTab(stab)
-    } else {
-      r.push(`?tab=${TabValues[0]}`)
-    }
-  }, [stab])
-
-  const r = useRouter()
+  const { value, sync } = useSyncSearchParams('tab', TabValues)
   return (
-    <Tabs
-      value={tab}
-      onValueChange={(value) => {
-        r.push(`?tab=${value}`)
-      }}
-    >
+    <Tabs value={value} onValueChange={sync}>
       <TabsList className='mb-5'>
         <TabsTrigger value='inventory'>Inventory</TabsTrigger>
         <TabsTrigger value='listed'>Listed</TabsTrigger>
@@ -308,4 +319,4 @@ export function MyAssets(p: { erc20?: boolean; nfts?: boolean }) {
       </TabsContent>
     </Tabs>
   )
-}
+})
