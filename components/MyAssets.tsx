@@ -1,24 +1,24 @@
 import { MarketABI } from '@/lib/abi/MarketAbi'
 import { getOrderList, getTradeHistory } from '@/lib/api'
 import { DECIMAL18, MarketAddress, getCurrentExploerUrl } from '@/lib/config'
+import { useSyncSearchParams } from '@/lib/hooks/useSyncSearchParams'
 import { useTradePairs } from '@/lib/hooks/useTradePairs'
 import { covert2OrderComponents } from '@/lib/market'
 import { erc1155ABI } from '@/lib/nft'
 import { getOrderAssetInfo, getOrderEP, getOrderPerMinMax, getOrderPerMinMaxBigint } from '@/lib/order'
-import { Order, OrderWrapper, TradePair } from '@/lib/types'
+import { OrderWrapper, TradePair } from '@/lib/types'
 import { cn, displayBn, fmtBn, handleError, parseBn, shortStr, toJson } from '@/lib/utils'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { utcFormat } from 'd3'
-import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import { erc721ABI, useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import GridTable from './GridTable'
+import { Loading } from './Loading'
+import STable from './SimpleTable'
 import { Spinner } from './Spinner'
 import { Button } from './ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
-import STable from './SimpleTable'
-import { Loading } from './Loading'
-import { useSyncSearchParams } from '@/lib/hooks/useSyncSearchParams'
 
 type GeneralProps = {
   tps: TradePair[]
@@ -292,7 +292,7 @@ function TradeHistory(p: GeneralProps) {
 
 const TabValues = ['inventory', 'listed', 'bidding', 'history']
 
-export const MyAssets = React.memo((p: { erc20?: boolean; nfts?: boolean }) => {
+export function MyAssets(p: { erc20?: boolean; nfts?: boolean }) {
   const { pairs } = useTradePairs()
   const tps = pairs.filter((pair) => (p.erc20 ? pair.assetType == 'ERC20' : p.nfts ? pair.assetType != 'ERC20' : true))
   const { value, sync } = useSyncSearchParams('tab', TabValues)
@@ -319,4 +319,4 @@ export const MyAssets = React.memo((p: { erc20?: boolean; nfts?: boolean }) => {
       </TabsContent>
     </Tabs>
   )
-})
+}
