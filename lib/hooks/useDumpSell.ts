@@ -12,6 +12,7 @@ import { getOrderPerMinMax, isSelfMaker } from '../order'
 import { ItemType, MatchOrdersFulfillment, OrderWrapper, TradePair, assetTypeToItemType } from '../types'
 import { handleError, parseBn, sleep } from '../utils'
 import { useRequestMatchOrder } from './useRequestMatchOrder'
+import { isPROD } from '../env'
 
 export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number, onSuccess?: () => void, isSimulation?: boolean) {
   const clients = useClients()
@@ -45,7 +46,7 @@ export function useDumpSell(tp: TradePair, orders: OrderWrapper[], count: number
   }, [orders, count])
   const { address } = useAccount()
   const { data: [balance] = [0n, 0n] } = useTpBalance(tp, isSimulation)
-  const disabledDumpSell = !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || countBn > balance
+  const disabledDumpSell = isPROD || !clients.pc || !clients.wc || !address || makerOrders.length <= 0 || countBn > balance
   const reqMatchOrder = useRequestMatchOrder()
   const refRetry = useRef<() => any>()
   const txs = useTxStatus({
