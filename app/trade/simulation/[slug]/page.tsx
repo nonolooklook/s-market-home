@@ -54,7 +54,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min <= priceBn && max >= priceBn)
           return item.detail.parameters.offer[0].token == tp.token && isFilterForPrice
         })
         .sort((a, b) => {
@@ -68,7 +68,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           let [min, max] = [0n, 0n]
           const priceBn = parseBn('' + selectPrice)
           const isFilterForPrice =
-            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min < priceBn && max > priceBn)
+            selectPrice <= 0 || (([min, max] = getOrderPerMinMaxBigint(item.detail, tp)) && min <= priceBn && max >= priceBn)
           return item.detail.parameters.offer[0].token == tp.asset && isFilterForPrice
         })
         .sort((a, b) => {
