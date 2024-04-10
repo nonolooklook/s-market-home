@@ -27,10 +27,16 @@ export function Header() {
   const { chain, chains } = useNetwork()
   const chainName = chains.find((c) => c.id === chain?.id)?.name
   const { address } = useAccount()
+  const lastTpId = localStorage.getItem('last-tp-id') || '5'
   const mLinks = useMemo(
     () =>
-      (isAdmin(address) ? links.concat([{ href: '/admin', label: 'Admin' }]) : links),
-    [address],
+      (isAdmin(address) ? links.concat([{ href: '/admin', label: 'Admin' }]) : links).map((item) => {
+        if (item.href === '/trade') {
+          return { ...item, href: `/trade/${lastTpId}` }
+        }
+        return { ...item }
+      }),
+    [address, lastTpId],
   )
   memoAccount.current = address as any
   const isMd = useMediaQuery('(min-width: 768px)')
@@ -49,9 +55,7 @@ export function Header() {
           mLinks.map((item) => (
             <Button
               key={item.href}
-              variant={
-                pathname == item.href || (pathname.startsWith(item.href) && item.href !== '/') ? 'default' : 'ghost'
-              }
+              variant={pathname == item.href || (pathname.startsWith(item.href) && item.href !== '/') ? 'default' : 'ghost'}
               onClick={() => r.push(item.href)}
             >
               {item.label}

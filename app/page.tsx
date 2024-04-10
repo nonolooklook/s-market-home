@@ -4,7 +4,6 @@ import { DeltaPecent } from '@/components/DeltaPecent'
 import STable from '@/components/SimpleTable'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { useTradePairs } from '@/lib/hooks/useTradePairs'
 import { TradePair } from '@/lib/types'
 import { StarFilledIcon } from '@radix-ui/react-icons'
@@ -14,11 +13,11 @@ import { ReactNode, useMemo, useState } from 'react'
 
 export default function Home() {
   const nftTabs = useMemo<string[]>(() => {
-    return ['🔥 Trending', '🌈 PFP', '🌟 Watchlist']
+    return ['🔥 Trending']
   }, [])
   const [currentNftTab, setNftTab] = useState<string>(nftTabs[0])
   const tokenTabs = useMemo<string[]>(() => {
-    return ['🔥 ALL', '🌈 FAVORITES']
+    return ['🔥 ALL']
   }, [])
   const [currentTokenTab, seTokenTab] = useState<string>(tokenTabs[0])
   const { pairs } = useTradePairs()
@@ -33,7 +32,7 @@ export default function Home() {
         _tokens.push(item)
         mtokens.push([
           <div key={'star'} className='flex items-center'>
-            <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+            {/* <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} /> */}
           </div>,
           <div key={'project'} className='flex items-center gap-2 pr-10'>
             <img src={item.assetImg} className='w-10 h-10 rounded-full' />
@@ -42,14 +41,14 @@ export default function Home() {
           </div>,
           `$${item.tradeInfo?.price?.toFixed(2)}`, // price
           <DeltaPecent key={'percent'} value={_.toNumber(item.tradeInfo.volumeChange24 || '0')} />,
-          `$${item.tradeInfo.volume24?.toFixed(2)}`,
-          `$${item.tradeInfo.marketCap?.toFixed()}`,
+          `$${item.tradeInfo.volume24?.toLocaleString('en',{ maximumFractionDigits: 2, notation: 'compact'})}`,
+          `$${item.tradeInfo.marketCap?.toLocaleString('en',{ maximumFractionDigits: 2, notation: 'compact'})}`,
         ])
       } else {
         _nfts.push(item)
         mnfts.push([
           <div key={'star'} className='flex items-center gap-4'>
-            <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} />
+            {/* <StarFilledIcon height={24} width={24} color={_.random(true) > 0.5 ? '#FFAC03' : '#E2E2E2'} /> */}
             {mnfts.length + 1}
           </div>,
           <div key={'project'} className='flex items-center gap-2 pr-10'>
