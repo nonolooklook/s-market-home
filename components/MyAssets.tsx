@@ -186,7 +186,10 @@ const getStatus = (item: any) => {
     '-2': 'MatchingFailed',
     '-3': 'InvalidGas',
   }
-  return statusMap[item.task_status + ''] || '-'
+  if (item.task_status < 0) return 'Failed'
+  if (item.task_status < 5) return 'Pending'
+  return 'Success'
+  // return statusMap[item.task_status + ''] || '-'
 }
 
 const tpKeyOf = (asset: string, assetId: number | string, tokenSymbol: string) =>

@@ -380,11 +380,15 @@ export function useTxStatus({
         safeRef.current && setTypeStep({ type: 'step', step: minmaxs.map((item) => ({ ...item, step: 1 })) })
       }
       if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {
-        const opd = r2.order_probability_detail[0]
         safeRef.current &&
           setTypeStep({
             type: 'step',
-            step: minmaxs.map((item) => ({ ...item, step: 2, txHash: r2?.match_tx_hash, price: displayBn(parseBn(opd.price.toFixed(4))) })),
+            step: minmaxs.map((item, index) => ({
+              ...item,
+              step: 2,
+              txHash: r2?.match_tx_hash,
+              price: displayBn(parseBn((r2.order_probability_detail?.[index]?.price || 0).toFixed(4))),
+            })),
           })
         return true
       }
