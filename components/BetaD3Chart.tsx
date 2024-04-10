@@ -242,22 +242,29 @@ export const BetaD3Chart = ({
       brushG
         .select('.handle--e')
         .on('touchmouse mousemove', (event: any) => {
-          const mousePos = d3.pointer(event, this)
+          // const mousePos = d3.pointer(event, this)
           dropTooltip.style('opacity', 0)
         })
         .on('mouseleave', () => {
           dropTooltip.style('opacity', 0)
         })
-      brushG.selectAll('.handle').style('fill', '#000').style('stroke', 'none').style('width', '2px')
-      brushG.selectAll('.handle').each(function () {
-        d3.select(this)
-          .append('rect')
-          .attr('width', smallRectWidth)
-          .attr('height', smallRectHeight)
-          .attr('x', -smallRectWidth / 2) // 将矩形置于手柄中心
-          .attr('y', -smallRectHeight / 2)
-          .attr('fill', 'red')
-      })
+      brushG
+        .selectAll('.handle')
+        .style('fill', '#000')
+        .style('stroke', 'none')
+        .style('width', '2px')
+        .attr('pointer-events', 'none')
+        .attr('cursor', 'none')
+      // brushG.selectAll('.handle').each(function () {
+      //   svg.append('rect')
+      //     .attr('pointer-events', 'none')
+      //     .attr('cursor', 'none')
+      //     .attr('width', smallRectWidth)
+      //     .attr('height', smallRectHeight)
+      //     .attr('x', -smallRectWidth / 2) // 将矩形置于手柄中心
+      //     .attr('y', -smallRectHeight / 2)
+      //     .attr('fill', 'red')
+      // })
     }
   }, [svgRef, chartW, chartH, minPrice, maxPrice, withBrush])
 
