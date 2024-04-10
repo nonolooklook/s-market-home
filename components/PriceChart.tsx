@@ -107,7 +107,7 @@ export const PriceChart = ({
         </Button>
         {(selectedPrice || 0) > 0 && (
           <Button size='sm' variant='secondary'>
-            Price: {(selectedPrice || 0).toFixed(fix)}~{((selectedPrice || 0) + precision).toFixed(fix)}
+            Price: {((selectedPrice || 0) - precision).toFixed(fix)}~{(selectedPrice || 0).toFixed(fix)}
           </Button>
         )}
         <Button size='sm' variant='outline' className='text-red-400 border-red-400'>
