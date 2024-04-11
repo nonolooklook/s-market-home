@@ -1,8 +1,9 @@
 import { Address } from 'viem'
 import { sepolia, arbitrumSepolia } from 'viem/chains'
+import { isPROD } from './env'
 
 // export const BASE_URL = 'http://192.168.1.18:3000/smev2'
-export const BASE_URL = 'https://sme-demo.mcglobal.ai/smev2'
+export const BASE_URL = isPROD ? 'https://sme-demo.mcglobal.ai/smev2' : 'https://sme-demo.mcglobal.ai/smev2'
 
 export const DECIMAL18 = 10n ** 18n
 
