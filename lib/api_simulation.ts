@@ -65,15 +65,11 @@ export function useTradePairDetail(id: string) {
 }
 
 export function useOrderList(tp: TradePair) {
-  return useApiGet<OrderWrapper[]>(
-    `/mock/order/list?tradingPairId=${tp.id}&nftAddress=${tp.asset}&tokenAddress=${tp.token}`,
-  )
+  return useApiGet<OrderWrapper[]>(`/mock/order/list?tradingPairId=${tp.id}&nftAddress=${tp.asset}&tokenAddress=${tp.token}`)
 }
 
 export function useTpOrderDistribution(tp: TradePair, precision: number, pointSize: number = 25) {
-  return useApiGet<TpOrderDistribution>(
-    `/mock/tradingPair/${tp.id}/distribution?precision=${precision}&pointSize=${pointSize}`,
-  )
+  return useApiGet<TpOrderDistribution>(`/mock/tradingPair/${tp.id}/distribution?precision=${precision}&pointSize=${pointSize}`)
 }
 
 export async function getUserBalance(address: Address) {
@@ -86,4 +82,8 @@ export async function getUserBalance(address: Address) {
       token_id: number
     }[]
   >(`/mock/user/${address}/account`)
+}
+
+export async function resetSimulation(address: Address, pId: number | string) {
+  return apiPost(`/mock/claim/${address}/${pId}/reset`, {})
 }

@@ -2,6 +2,7 @@
 import GridTable from '@/components/GridTable'
 import { PriceChart } from '@/components/PriceChart'
 import { RequestCoins } from '@/components/RequestCoins'
+import { ResetSimulation } from '@/components/ResetSimulation'
 import { RowTip } from '@/components/RowTooltip'
 import { Spinner } from '@/components/Spinner'
 import { TpBalance } from '@/components/TpBalance'
@@ -262,6 +263,12 @@ function TpTrade({ tp }: { tp: TradePair }) {
         <TpBalance tp={tp} isSimulation ref={tpBalanceRef} />
         <Button onClick={() => r.push(`/trade/${tp.id}`)}>Real</Button>
         <RequestCoins tp={tp} onSuccess={() => tpBalanceRef.current?.()} />
+        <ResetSimulation
+          tp={tp}
+          onSuccess={() => {
+            refetchOrderList(), tpBalanceRef.current?.()
+          }}
+        />
         {/* <Button onClick={() => window.open(dealUrl(url) + 'address/' + info?.collectionDetail?.contract_address)}>
           History
         </Button> */}
