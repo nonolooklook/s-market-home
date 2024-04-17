@@ -302,7 +302,11 @@ function TpTrade({ tp }: { tp: TradePair }) {
               type='number'
               step={1}
               value={sellCount}
-              onChange={(e) => setSellCount(isErc20 ? _.toNumber(e.target.value) : _.toSafeInteger(e.target.value))}
+              onChange={(e) =>
+                setSellCount(
+                  isErc20 ? _.toNumber(e.target.value?.replaceAll('-', '')) : _.toSafeInteger(e.target.value?.replaceAll('-', '')),
+                )
+              }
             />
             <Button onClick={dumpSell} disabled={disabledDumpSell}>
               {loadingDumpSell && <Spinner />} Dump Sell
@@ -339,7 +343,11 @@ function TpTrade({ tp }: { tp: TradePair }) {
               type='number'
               step={1}
               value={buyCount}
-              onChange={(e) => setBuyCount(isErc20 ? _.toNumber(e.target.value) : _.toSafeInteger(e.target.value))}
+              onChange={(e) =>
+                setBuyCount(
+                  isErc20 ? _.toNumber(e.target.value?.replaceAll('-', '')) : _.toSafeInteger(e.target.value?.replaceAll('-', '')),
+                )
+              }
             />
             <Button onClick={dumpBuy} disabled={disabledDumpBuy}>
               {loadingDumpBuy && <Spinner />} Dump Buy

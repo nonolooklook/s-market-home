@@ -29,7 +29,7 @@ export const AssetInput: React.FC<Props> = ({ amount, setAmount, isErc20, max, i
         <Input
           pattern='[0-9.]*'
           value={amount}
-          onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
+          onChange={(e) => checkInput(e.target.value?.replaceAll('-', '')) && setAmount(e.target.value?.replaceAll('-', ''))}
         />
         {max != undefined && (
           <div

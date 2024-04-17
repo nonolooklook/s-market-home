@@ -43,7 +43,7 @@ export const InputWithButton = ({
         value={amount}
         disabled={disable}
         pattern='[0-9]*'
-        onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
+        onChange={(e) => checkInput(e.target.value?.replaceAll('-', '')) && setAmount(e.target.value?.replaceAll('-', ''))}
       />
 
       <div

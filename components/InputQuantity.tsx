@@ -59,7 +59,7 @@ export function InputQuantityValue({
           pattern='[0-9.]*'
           value={amount}
           disabled={disable}
-          onChange={(e) => checkInput(e.target.value) && setAmount(e.target.value)}
+          onChange={(e) => checkInput(e.target.value?.replaceAll('-', '')) && setAmount(e.target.value?.replaceAll('-', ''))}
         />
         <div>{value}</div>
       </div>
