@@ -241,6 +241,7 @@ function TradeHistory(p: GeneralProps) {
             'Role',
             'Min Price/Max Price',
             'Fee',
+            'Amount',
             'Total',
             'Txn hash',
           ]}
@@ -281,6 +282,7 @@ function TradeHistory(p: GeneralProps) {
                 </div>
               </div>, // Min Price/Max Price;
               `${displayBn(fee)} ${tokenSymbol}`, // Fee
+              `${displayBn(count)}`,
               `${displayBn(total)} ${tokenSymbol}`, // Total
               <a href={txLink} target='_blank' key={'link'} rel='noreferrer' className='text-blue-300'>
                 {shortStr(item.match_tx_hash, 8, 6)}
