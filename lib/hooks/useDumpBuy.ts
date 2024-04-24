@@ -62,6 +62,7 @@ export function useDumpBuy(tp: TradePair, orders: OrderWrapper[], count: number,
   const reqMatchOrder = useRequestMatchOrder()
   const refRetry = useRef<() => any>()
   const txs = useTxStatus({
+    tp,
     onRetry: () => refRetry.current?.(),
     isSimulation,
   })

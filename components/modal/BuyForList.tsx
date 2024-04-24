@@ -36,6 +36,7 @@ export function BuyForList({
   useEffect(() => setAmount(maxAmount), [maxAmount])
   const reqMatchOrder = useRequestMatchOrder()
   const { txsOpen, txsProps, setTxsOpen, setTypeStep, intevalCheckStatus } = useTxStatus({
+    tp,
     onRetry: () => fillSellOrder(),
     onBack: () => onOpenChange?.(false),
   })

@@ -102,7 +102,7 @@ export type TxTaskStatus = {
   order_hash_list: Address[]
   order_probability_detail?: {
     price: number
-    itemSize: number
+    itemSize: string
     numerator: number
     orderHash: string
     denominator: number
@@ -112,7 +112,10 @@ export type TxTaskStatus = {
   }[]
   prepare_tx_hash: string
   random_strategy: number
-  task_detail: {}
+  task_detail: {
+    makerOrders: Order[],
+    takerOrders: Order[],
+  }
   task_hash: string
   task_status: number
   token_address: Address

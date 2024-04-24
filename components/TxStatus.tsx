@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { apiGet } from '@/lib/api'
 import { getCurrentExploerUrl } from '@/lib/config'
 import { useSafe } from '@/lib/hooks/useSafe'
-import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TxTaskStatus } from '@/lib/types'
+import { MATCH_SUCCESS, PREPARE_SEND_SUCCESS, TradePair, TxTaskStatus } from '@/lib/types'
 import { cn, displayBn, parseBn, sleep } from '@/lib/utils'
 import { Share2Icon } from '@radix-ui/react-icons'
 import Image from 'next/image'
@@ -124,10 +124,27 @@ function LoadArrow({ anim, position }: { anim: boolean; position: '>>' | '<<' })
 export type ValueType = 'low' | 'mid' | 'large' | 'super'
 const ValueTypes: ValueType[] = ['low', 'mid', 'large', 'super']
 
-function PriceItem({ tit, value, txHash, valueType }: { tit: string; txHash?: string; value?: string; valueType?: ValueType }) {
+function PriceItem({
+  tit,
+  value,
+  txHash,
+  valueType,
+  symbol,
+}: {
+  tit: string
+  txHash?: string
+  value?: string
+  valueType?: ValueType
+  symbol?: string
+}) {
   // valueType && (valueType = 'large')
   const TypeValue = () => {
-    if (!valueType) return <div>{value} USDC</div>
+    if (!valueType)
+      return (
+        <div>
+          {value} {symbol}
+        </div>
+      )
     return (
       <div
         style={{
@@ -157,7 +174,7 @@ function PriceItem({ tit, value, txHash, valueType }: { tit: string; txHash?: st
           }}
         >
           <span className='text-lg'>{value}</span>
-          <span className='text-sm ml-1'>USDC</span>
+          {symbol && <span className='text-sm ml-1'>{symbol}</span>}
         </div>
         {valueType == 'super' && <Image src={'/rainbow.gif'} alt='' width={58} height={50} className='absolute -left-6 -top-3' />}
         {valueType == 'large' && (
@@ -172,8 +189,7 @@ function PriceItem({ tit, value, txHash, valueType }: { tit: string; txHash?: st
     <div className='flex justify-between items-center w-full text-lg font-medium relative overflow-visible h-[2.5rem]'>
       <div className=''>{tit}</div>
       {value && <TypeValue />}
-      {!value && <div className='loading' style={{ fontSize: 5 }} />}
-
+      {!value && <div className='loading' style={{ fontSize: 30 }} />}
       {txHash && (
         <a
           href={getCurrentExploerUrl() + '/tx/' + txHash}
@@ -192,6 +208,7 @@ export type StepType = {
   step: 0 | 1 | 2
   min: string
   max: string
+  count?: string
   price?: string
   priceType?: ValueType
   txHash?: string
@@ -199,12 +216,13 @@ export type StepType = {
 
 export type TxStatusProps = {
   type: 'loading' | 'fail' | 'step'
+  tp: TradePair
   step?: StepType | StepType[]
   onClose?: (back: boolean) => void
   onRetry?: () => void
 }
 
-export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
+export function TxStatus({ tp, type, step, onClose, onRetry }: TxStatusProps) {
   const steps = Array.isArray(step) ? step : step ? [step] : []
   const canClose = type == 'fail' || (type == 'step' && steps && steps[0]?.step == 2)
   const wrapClose = (back: boolean) => {
@@ -285,10 +303,17 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
               <SwiperSlide className='flex w-full overflow-x-auto gap-2' key={`step_item_${index}`}>
                 <div className='flex flex-col items-center gap-5 w-full'>
                   {step.step > 0 && (
-                    <div className='flex flex-col gap-6 w-full'>
-                      <PriceItem tit='Max price:' value={step.max} />
-                      <PriceItem tit='Final price:' value={step.price} valueType={step.priceType} txHash={step.txHash} />
-                      <PriceItem tit='Min price:' value={step.min} />
+                    <div className='flex flex-col gap-2 w-full'>
+                      <PriceItem tit='Max price:' value={step.max} symbol={tp.tokenSymbol} />
+                      <PriceItem
+                        tit='Final price:'
+                        value={step.price}
+                        symbol={tp.tokenSymbol}
+                        valueType={step.priceType}
+                        txHash={step.txHash}
+                      />
+                      <PriceItem tit='Min price:' value={step.min} symbol={tp.tokenSymbol} />
+                      <PriceItem tit='Amount:' value={step.count} />
                     </div>
                   )}
                 </div>
@@ -336,10 +361,12 @@ export function TxStatus({ type, step, onClose, onRetry }: TxStatusProps) {
 }
 
 export function useTxStatus({
+  tp,
   onRetry,
   onBack,
   isSimulation,
 }: {
+  tp: TradePair
   onRetry?: TxStatusProps['onRetry']
   onBack?: () => void
   isSimulation?: boolean
@@ -360,13 +387,14 @@ export function useTxStatus({
     return {
       type: typestep.type,
       step: typestep.step,
+      tp: tp,
       onClose: (back) => {
         back && onBack && onBack()
         setTxsOpen(false)
       },
       onRetry,
     }
-  }, [typestep, setTxsOpen, onRetry, onBack])
+  }, [typestep, setTxsOpen, onRetry, onBack, tp])
 
   const intevalCheckStatus = async (reqId: string, minmax: [string, string] | { min: string; max: string }[]) => {
     const minmaxs: { min: string; max: string }[] = typeof minmax[0] == 'string' ? [{ min: minmax[0], max: minmax[1] }] : (minmax as any)
@@ -377,7 +405,11 @@ export function useTxStatus({
         () => null,
       )
       if (r2?.task_status && r2?.task_status >= PREPARE_SEND_SUCCESS && r2?.task_status < MATCH_SUCCESS) {
-        safeRef.current && setTypeStep({ type: 'step', step: minmaxs.map((item) => ({ ...item, step: 1 })) })
+        safeRef.current &&
+          setTypeStep({
+            type: 'step',
+            step: minmaxs.map((item, index) => ({ ...item, step: 1, count: r2.order_probability_detail?.[index]?.itemSize || '1' })),
+          })
       }
       if (r2?.task_status === MATCH_SUCCESS && r2?.order_probability_detail && r2?.order_probability_detail.length > 0) {
         safeRef.current &&
@@ -387,6 +419,7 @@ export function useTxStatus({
               ...item,
               step: 2,
               txHash: r2?.match_tx_hash,
+              count: r2.order_probability_detail?.[index]?.itemSize || '1',
               price: displayBn(parseBn((r2.order_probability_detail?.[index]?.price || 0).toFixed(4))),
             })),
           })

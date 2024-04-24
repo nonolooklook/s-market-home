@@ -219,9 +219,9 @@ function TradeHistory(p: GeneralProps) {
       return getTradeHistory(address)
     },
   })
-  const history = (p.tps.length && address && !isLoading ? data : []).filter(
-    (item) => filterTpMap[tpKeyOf(item.collection_address, item.token_id, item.token_name)],
-  )
+  const history = (p.tps.length && address && !isLoading ? data : [])
+    .filter((item) => filterTpMap[tpKeyOf(item.collection_address, item.token_id, item.token_name)])
+    .sort((a, b) => (b.match_timestamp || 0) - (a.match_timestamp || 0))
   if (isLoading) return <Loading />
   return (
     <div>

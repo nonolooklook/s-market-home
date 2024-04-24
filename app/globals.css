@@ -86,7 +86,7 @@
 
 /* HTML: <div class="loading"></div> */
 .loading {
-  width: 50px;
+  width: 1em;
   aspect-ratio: 1;
   display: grid;
   border-radius: 50%;
