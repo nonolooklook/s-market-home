@@ -39,6 +39,13 @@ export function getOrderEP(order: Order, tp: TradePair) {
   return displayBn(getOrderEPbigint(order, tp))
 }
 
+export function getOrderDiviation(order: Order, tp: TradePair) {
+  const [min, max] = getOrderPerMinMax(order, tp)
+  let num = ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100
+  let Deviation = parseInt(num.toFixed(0)) + '%'
+  return Deviation
+}
+
 export const memoPrivilege = {
   privilegeOfferer: '',
 }

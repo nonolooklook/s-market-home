@@ -4,6 +4,7 @@ import { PriceChart } from '@/components/PriceChart'
 import { RowTip } from '@/components/RowTooltip'
 import { Spinner } from '@/components/Spinner'
 import { TpBalance } from '@/components/TpBalance'
+import { TpRecord } from '@/components/TpRecord'
 import { TxStatus } from '@/components/TxStatus'
 import { BuyForList } from '@/components/modal/BuyForList'
 import HoverModalList from '@/components/modal/HoverModalList'
@@ -17,7 +18,7 @@ import { useOrderList, useTradePairDetail } from '@/lib/api'
 import { useDumpBuy } from '@/lib/hooks/useDumpBuy'
 import { useDumpSell } from '@/lib/hooks/useDumpSell'
 import { useGetTradePair } from '@/lib/hooks/useTradePairs'
-import { getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
+import { getOrderDiviation, getOrderEP, getOrderEPbigint, getOrderPerMinMax, getOrderPerMinMaxBigint, isSelfMaker } from '@/lib/order'
 import { OrderWrapper, TradePair } from '@/lib/types'
 import { cn, dealUrl, fmtBn, parseBn } from '@/lib/utils'
 import { DiscordIcon } from '@/public/Discord'
@@ -116,9 +117,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const bids = useMemo(() => {
     return bidsdata.map((o) => {
       const [min, max] = getOrderPerMinMax(o.detail, tp)
-      let num = ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100
-      let Deviation = parseInt(num.toFixed(0)) + '%'
-
+      let Deviation = getOrderDiviation(o.detail, tp)
       return [
         fmtBn(parseBn(o.remaining_item_size)),
         `$${max}`,
@@ -138,8 +137,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
   const listing = useMemo(() => {
     return listdata.map((o) => {
       const [min, max] = getOrderPerMinMax(o.detail, tp)
-      let num = ((Number(max) - Number(min)) / (Number(max) + Number(min))) * 100
-      let Deviation = parseInt(num.toFixed(0)) + '%'
+      let Deviation = getOrderDiviation(o.detail, tp)
       return [
         `$${getOrderEP(o.detail, tp)}`,
         Deviation,
@@ -345,6 +343,7 @@ function TpTrade({ tp }: { tp: TradePair }) {
           </div>
         </div>
       </div>
+      <TpRecord tp={tp} />
       <div className='py-4 mb-6'>
         <PriceChart tp={tp} selectedPrice={selectPrice} setSelectedPrice={setSelectPrice} />
       </div>

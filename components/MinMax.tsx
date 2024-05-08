@@ -35,7 +35,7 @@ export function MinMax({
           maxLength={maxLength}
           value={min}
           className={'w-[120px] bg-transparent outline-0 text-center text-xl font-semibold overflow-x-auto'}
-          onChange={(e) => checkInput(e.target.value) && onChange && onChange(e.target.value.replaceAll('-', '') as `${number}`, max)}
+          onChange={(e) => checkInput(e.target.value) && parseBn(e.target.value) <= parseBn(max || '0') && onChange && onChange(e.target.value.replaceAll('-', '') as `${number}`, max)}
         />
         {/* <Image src={'/usdc.svg'} alt={'usdc'} width={20} height={20} /> */}
       </div>
@@ -50,7 +50,7 @@ export function MinMax({
           value={max}
           maxLength={maxLength}
           className={'w-[120px] bg-transparent outline-0 text-center text-xl font-semibold overflow-x-auto'}
-          onChange={(e) => checkInput(e.target.value) && onChange && onChange(min, e.target.value.replaceAll('-', '') as `${number}`)}
+          onChange={(e) => checkInput(e.target.value) && parseBn(e.target.value) >= parseBn(min || '0') && onChange && onChange(min, e.target.value.replaceAll('-', '') as `${number}`)}
         />
         {/* <Image src={'/usdc.svg'} alt={'usdc'} width={20} height={20} /> */}
       </div>

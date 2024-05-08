@@ -78,7 +78,7 @@ function Inventory(p: GeneralProps) {
   )
 }
 
-function OrderCancel(p: { order: OrderWrapper; onSuccess: () => void }) {
+export function OrderCancel(p: { order: OrderWrapper; onSuccess: () => void }) {
   const { data: wc } = useWalletClient()
   const pc = usePublicClient()
   const { address } = useAccount()
@@ -103,10 +103,10 @@ function OrderCancel(p: { order: OrderWrapper; onSuccess: () => void }) {
     onError: handleError,
     onSuccess: p.onSuccess,
   })
-  return <Button onClick={() => mutateAsync()}>{isPending && <Spinner />} Cancel</Button>
+  return <Button className='w-[100px]' onClick={() => mutateAsync()}>{isPending && <Spinner />} Cancel</Button>
 }
 
-function Listed(p: GeneralProps & { bid?: boolean }) {
+export function Listed(p: GeneralProps & { bid?: boolean }) {
   const { address } = useAccount()
   const {
     data = [],

@@ -15,8 +15,7 @@ export function getErrorMsg(error: any) {
   else if (typeof error?.msg == 'string') msg = error?.msg
   else if (typeof error?.message == 'string') msg = error?.message
   // replace
-  if (msg.includes('User denied') || msg.includes('user rejected transaction'))
-    return 'You declined the action in your wallet.'
+  if (msg.includes('User denied') || msg.includes('user rejected transaction')) return 'You declined the action in your wallet.'
   if (msg.includes('transaction failed')) return 'Transaction failed'
   return msg
 }
@@ -71,8 +70,7 @@ export const ERROR_FILL_SELF_ORDER = 'Cannot match with yourself.'
 
 export const handleError = (e: any) => {
   const err = e.toString()
-  console.error(err)
-  if (err.includes('rejected signing')) {
+  if (err.includes('rejected signing') || err.includes('User denied transaction signature')) {
     toast.error(ERROR_SIGN_REJECTED)
   } else {
     toast.error(ERROR_SYSTEM)
@@ -95,4 +93,23 @@ export function shortStr(str?: string, startLen: number = 6, endLen: number = 6)
   const start = str?.substring(0, startLen) || ''
   const end = str?.substring(str.length - endLen) || ''
   return `${start}...${end}`
+}
+
+export function fmtNumber(value: number | string, fixed: number = 2) {
+  try {
+    return Number(value).toLocaleString('en-US', {
+      maximumFractionDigits: fixed,
+      // minimumFractionDigits: fixed,
+    })
+  } catch (error) {
+    return '0'
+  }
+}
+
+export function fmtTime(time: string | number | Date) {
+  try {
+    return new Date(time).toLocaleString()
+  } catch (error) {
+    return '-'
+  }
 }
