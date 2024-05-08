@@ -22,7 +22,7 @@ function MakerOrders({ tp, address }: { tp: TradePair; address: Address }) {
           getOrderDiviation(item.detail, tp),
           item.order_type === 2 ? 'Sell' : 'Buy',
           fmtTime(item.create_time),
-          <OrderCancel order={item} onSuccess={refetch} />,
+          <OrderCancel key={'cancel'} order={item} onSuccess={refetch} />,
         ]
       }),
     [data],
