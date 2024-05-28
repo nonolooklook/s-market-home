@@ -1,4 +1,5 @@
+import { ENVS } from "./config"
 
-export const isDEV = process.env.NEXT_PUBLIC_ENV == 'dev'
-export const isPROD = process.env.NEXT_PUBLIC_ENV == 'prod'
+export const isDEV = ENVS.ENV == 'dev'
+export const isPROD = ENVS.ENV == 'prod'
 

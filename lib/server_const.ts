@@ -1,0 +1,1 @@
+export const ENV_KEYS = ['ENV', 'BASE_URL', 'NETWORK', 'MARKET_ADDRESS', 'FEE_ADDRESS', 'SME_GAS_MANAGER'] as const

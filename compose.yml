@@ -1,0 +1,9 @@
+name: s-market-home
+services:
+  client:
+    build:
+      context: ./
+    ports:
+      - 3000:3000
+    environment:
+      - ENV=prod
