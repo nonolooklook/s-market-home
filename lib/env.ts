@@ -1,4 +1,4 @@
-export const ENV: string = 'dev'
 
-export const isDEV = ENV == 'dev'
-export const isPROD = ENV == 'prod'
+export const isDEV = process.env.NEXT_PUBLIC_ENV == 'dev'
+export const isPROD = process.env.NEXT_PUBLIC_ENV == 'prod'
+
